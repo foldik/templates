@@ -1,3 +1,4 @@
 {
+    "/api/session": "/users/1",
     "/api/*": "/$1"
 }

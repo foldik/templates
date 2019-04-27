@@ -2,7 +2,10 @@
     "users": [
         {
             "id": 1,
-            "username": "foldik2"
+            "username": "foldik",
+            "first_name": "Kristof",
+            "last_name": "Földi",
+            "role": "Admin"
         }
     ]
 }

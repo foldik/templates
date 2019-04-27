@@ -1,11 +1,17 @@
 module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
 
+import Api
 import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Http
+import Role
+import Route
+import Session
 import Url
+import User
 
 
 main : Program () Model Msg
@@ -25,15 +31,52 @@ main =
 
 
 type alias Model =
-    { value : Int
+    { session : Session.Session
     }
+
+
+type Page
+    = Loading
+    | NotFound
+    | Home
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model 0
-    , Cmd.none
+    let
+        session =
+            Session.guest key url
+    in
+    ( Model session
+    , Api.loadSession GotSession
     )
+
+
+
+-- UPDATE
+
+
+type Msg
+    = UrlChanged Url.Url
+    | LinkClicked Browser.UrlRequest
+    | GotSession (Result Http.Error User.User)
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        GotSession result ->
+            case result of
+                Ok user ->
+                    ( { model | session = Session.toSignedIn model.session user }
+                    , Cmd.none
+                    )
+
+                Err _ ->
+                    ( model, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 
@@ -46,34 +89,10 @@ view model =
     , body =
         [ div []
             [ div []
-                [ button [ onClick Increase ]
-                    [ text "Add 1" ]
-                ]
-            , div []
-                [ text (String.fromInt model.value) ]
+                [ text "Hello" ]
             ]
         ]
     }
-
-
-
--- UPDATE
-
-
-type Msg
-    = UrlChanged Url.Url
-    | LinkClicked Browser.UrlRequest
-    | Increase
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Increase ->
-            (Model (model.value + 1), Cmd.none)
-
-        _ ->
-            (model, Cmd.none)
 
 
 
