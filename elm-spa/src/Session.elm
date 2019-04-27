@@ -1,4 +1,4 @@
-module Session exposing (Session(..), getNavKey, getUrl, getZone, guest, isSignedIn, setUrl, setZone, toNotSignedIn, toSignedIn)
+module Session exposing (Session(..), getNavKey, getUrl, getZone, guest, isSignedIn, notSignedIn, setUrl, setZone, toNotSignedIn, toSignedIn)
 
 import Browser.Navigation as Nav
 import Time
@@ -19,6 +19,16 @@ isSignedIn session =
 
         NotSignedIn _ _ _ ->
             False
+
+
+notSignedIn : Session -> Bool
+notSignedIn session =
+    case session of
+        SignedIn _ _ _ _ ->
+            False
+
+        NotSignedIn _ _ _ ->
+            True
 
 
 toSignedIn : Session -> User.User -> Session
