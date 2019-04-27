@@ -12,6 +12,7 @@ RUN npm run build
 COPY . ./
 
 RUN npm run build
+RUN npm run uglifyjs
 
 ######################## Final
 FROM nginx:1.16-alpine
