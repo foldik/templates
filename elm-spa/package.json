@@ -1,19 +1,21 @@
 {
   "name": "elm-spa",
   "version": "0.0.1-SNAPSHOT",
-  "description": "",
+  "description": "Elm SPA Starter",
   "main": "index.js",
   "keywords": [],
-  "author": "",
+  "author": "foldik",
   "license": "ISC",
   "scripts": {
     "format": "elm-format src/",
-    "dev": "",
+    "mock-api": "json-server --watch mock-api/db.json --port 9001 --routes mock-api/routes.json",
+    "dev": "elm-live src/Main.elm -p 9000 --open --pushstate --proxyPrefix /api --proxyHost http://localhost:9001 --start-page=index.html -- --debug --output=dist/main.js",
     "build": "elm make src/Main.elm --optimize --output=dist/main.js"
   },
   "devDependencies": {
     "elm": "^0.19.0-bugfix6",
     "elm-format": "^0.8.1",
-    "elm-live": "^3.4.0"
+    "elm-live": "^3.4.0",
+    "json-server": "^0.14.2"
   }
 }

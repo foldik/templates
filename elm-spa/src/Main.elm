@@ -25,13 +25,13 @@ main =
 
 
 type alias Model =
-    { value : String
+    { value : Int
     }
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model "Hello World!"
+    ( Model 0
     , Cmd.none
     )
 
@@ -45,7 +45,13 @@ view model =
     { title = "Elm SPA"
     , body =
         [ div []
-            [ text model.value ]
+            [ div []
+                [ button [ onClick Increase ]
+                    [ text "Add 1" ]
+                ]
+            , div []
+                [ text (String.fromInt model.value) ]
+            ]
         ]
     }
 
@@ -57,16 +63,17 @@ view model =
 type Msg
     = UrlChanged Url.Url
     | LinkClicked Browser.UrlRequest
+    | Increase
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        UrlChanged url ->
-            ( Model "UrlChanged", Cmd.none )
+        Increase ->
+            (Model (model.value + 1), Cmd.none)
 
-        LinkClicked urlRequest ->
-            ( Model "LinkClicked", Cmd.none )
+        _ ->
+            (model, Cmd.none)
 
 
 
