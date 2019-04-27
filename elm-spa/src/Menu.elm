@@ -15,7 +15,7 @@ import User
 type alias MenuItem =
     { name : String
     , link : String
-    , conditions : List (Session.Session -> Bool)
+    , conditions : Session.Session -> Bool
     , subMenuItems : List SubMenuItem
     }
 
@@ -23,7 +23,7 @@ type alias MenuItem =
 type alias SubMenuItem =
     { name : String
     , link : String
-    , conditions : List (Session.Session -> Bool)
+    , conditions : Session.Session -> Bool
     }
 
 
@@ -31,35 +31,45 @@ config : List MenuItem
 config =
     [ MenuItem "Login"
         "/login"
-        [ Session.notSignedIn ]
+        Session.notSignedIn
         []
     , MenuItem "Logout"
         "/logout"
-        [ Session.isSignedIn ]
+        Session.isSignedIn
         []
-    , MenuItem "Home"
+    , MenuItem "File"
         "/"
-        [ hasAnyRole [ Role.Admin, Role.User ] ]
-        []
+        (Session.hasAnyRole [ Role.Admin, Role.User ])
+        [ SubMenuItem "Save"
+            "/save"
+            always
+        , SubMenuItem "Edit"
+            "/edit"
+            (Session.hasAnyRole [ Role.Admin ])
+        ]
     ]
 
 
-hasAnyRole : List Role.Role -> (Session.Session -> Bool)
-hasAnyRole roles =
-    \session ->
-        case session of
-            Session.NotSignedIn _ _ _ ->
-                False
-
-            Session.SignedIn _ _ _ user ->
-                List.any (\role -> role == user.role) roles
+always : Session.Session -> Bool
+always =
+    \session -> True
 
 
 
 -- VIEW
 
 
-view : msg -> Session.Session -> List MenuItem -> Html msg
-view msg session menuItems =
+view : msg -> Bool -> Session.Session -> Html msg
+view msg isOpen session =
     div []
         [ text "Menu" ]
+
+
+boolToString : Bool -> String
+boolToString value =
+    case value of
+        True ->
+            "true"
+
+        False ->
+            "false"

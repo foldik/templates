@@ -1,6 +1,7 @@
-module Session exposing (Session(..), getNavKey, getUrl, getZone, guest, isSignedIn, notSignedIn, setUrl, setZone, toNotSignedIn, toSignedIn)
+module Session exposing (Session(..), getNavKey, getUrl, getZone, guest, hasAnyRole, isSignedIn, notSignedIn, setUrl, setZone, toNotSignedIn, toSignedIn)
 
 import Browser.Navigation as Nav
+import Role
 import Time
 import Url
 import User
@@ -29,6 +30,17 @@ notSignedIn session =
 
         NotSignedIn _ _ _ ->
             True
+
+
+hasAnyRole : List Role.Role -> (Session -> Bool)
+hasAnyRole roles =
+    \session ->
+        case session of
+            NotSignedIn _ _ _ ->
+                False
+
+            SignedIn _ _ _ user ->
+                List.any (\role -> role == user.role) roles
 
 
 toSignedIn : Session -> User.User -> Session
