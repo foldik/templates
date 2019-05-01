@@ -47,7 +47,7 @@ type alias HomeModel =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model url key Nothing Loading, send (InitPage (Just adminUser)) )
+    ( Model url key Nothing Loading, send (InitApp (Just adminUser)) )
 
 
 adminUser : User
@@ -60,7 +60,7 @@ simpleUser =
     User "Kristóf" SimpleUser
 
 
-send : Msg -> Cmd Msg
+send : msg -> Cmd msg
 send msg =
     Task.succeed msg
         |> Task.perform identity
@@ -71,7 +71,7 @@ send msg =
 
 
 type Msg
-    = InitPage (Maybe User)
+    = InitApp (Maybe User)
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | GoToRoute Route.Route
@@ -81,6 +81,7 @@ type Msg
 type HomeMsg
     = Increase
     | Decrease
+    | InitHomePage Int
 
 
 type User
@@ -100,7 +101,7 @@ type Role
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.page ) of
-        ( InitPage maybeUser, _ ) ->
+        ( InitApp maybeUser, _ ) ->
             ( { model | maybeUser = maybeUser }, Nav.pushUrl model.key (Url.toString model.url) )
 
         ( LinkClicked urlRequest, _ ) ->
@@ -112,37 +113,48 @@ update msg model =
                     ( model, Nav.load href )
 
         ( UrlChanged url, _ ) ->
-            ( { model | url = url, page = loadPage url model.maybeUser }, Cmd.none )
+            let
+                ( page, command ) =
+                    loadPage url model.maybeUser
+            in
+            ( { model | url = url, page = page }, command )
 
         ( GoToRoute route, _ ) ->
             ( model, Nav.pushUrl model.key (Route.toString route) )
 
         ( HomePageMsg pageMsg, Home pageModel ) ->
-            ( model, Cmd.none )
+            let
+                ( newPageModel, pageCommand ) =
+                    case ( pageMsg, pageModel ) of
+                        ( Increase, Just id ) ->
+                            ( Just (id + 1), Cmd.none )
 
-        {-
-           case pageMsg of
-               Increase ->
-                   ({model | page = Home (pageModel + 1)}, Cmd.none)
+                        ( Decrease, Just id ) ->
+                            ( Just (id - 1), Cmd.none )
 
-               Decrease ->
-                   ({model | page = Home (pageModel - 1)}, Cmd.none)
-        -}
+                        ( InitHomePage id, Nothing ) ->
+                            ( Just id, Cmd.none )
+
+                        ( _, _ ) ->
+                            ( pageModel, Cmd.none )
+            in
+            ( { model | page = Home newPageModel }, pageCommand |> Cmd.map HomePageMsg )
+
         ( _, _ ) ->
             ( model, Cmd.none )
 
 
-loadPage : Url.Url -> Maybe User -> Page
+loadPage : Url.Url -> Maybe User -> ( Page, Cmd Msg )
 loadPage url maybeUser =
     case authorize (Route.router url) maybeUser of
         Route.NotFound ->
-            NotFound
+            ( NotFound, Cmd.none )
 
         Route.Home ->
-            Home Nothing
+            ( Home Nothing, Cmd.map HomePageMsg (send (InitHomePage 10)) )
 
         Route.Page id ->
-            Page id
+            ( Page id, Cmd.none )
 
 
 authorize : Route.Route -> Maybe User -> Route.Route
@@ -229,21 +241,29 @@ pageView model =
             h1 [ class "title is-1" ]
                 [ text "Not found" ]
 
-        Home id ->
+        Home maybeId ->
             div []
-                [ h1 [ class "title is-1" ]
-                    [ text "Home" ]
-                , h1 [ class "subtitle is-3" ]
-                    [ text ("Value: " ++ String.fromInt 1) ]
-                , button [ class "button", onClick Increase ]
-                    [ text "Increase" ]
-                , button [ class "button", onClick Decrease ]
-                    [ text "Decrease" ]
+                (case maybeId of
+                    Just id ->
+                        [ h1 [ class "title is-1" ]
+                            [ text "Home" ]
+                        , h1 [ class "subtitle is-3" ]
+                            [ text ("Value: " ++ String.fromInt id) ]
+                        , button [ class "button", onClick Increase ]
+                            [ text "Increase" ]
+                        , button [ class "button", onClick Decrease ]
+                            [ text "Decrease" ]
+                        , div []
+                            [ a [ class "button", href (Route.toString (Route.Page id)) ]
+                                [ text ("/page/" ++ String.fromInt id) ]
+                            ]
+                        ]
 
-                {- }                , button [ class "button", onClick (GoToRoute (Route.Page id))]
-                   [ text ("/page/" ++ (String.fromInt id)) ]
-                -}
-                ]
+                    Nothing ->
+                        [ h1 [ class "title is-1" ]
+                            [ text "Initializing Hme page" ]
+                        ]
+                )
                 |> Html.map HomePageMsg
 
         Page id ->
