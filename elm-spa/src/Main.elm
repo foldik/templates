@@ -37,8 +37,12 @@ type alias Model =
 type Page
     = Loading
     | NotFound
-    | Home
+    | Home HomeModel
     | Page Int
+
+
+type alias HomeModel =
+    Maybe Int
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -70,10 +74,22 @@ type Msg
     = InitPage (Maybe User)
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | GoToRoute Route.Route
+    | HomePageMsg HomeMsg
+
+
+type HomeMsg
+    = Increase
+    | Decrease
 
 
 type User
     = User String Role
+
+
+getRole : User -> Role
+getRole (User name role) =
+    role
 
 
 type Role
@@ -83,11 +99,11 @@ type Role
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        InitPage maybeUser ->
-            ( { model | page = loadPage model.url model.maybeUser }, Cmd.none )
+    case ( msg, model.page ) of
+        ( InitPage maybeUser, _ ) ->
+            ( { model | maybeUser = maybeUser }, Nav.pushUrl model.key (Url.toString model.url) )
 
-        LinkClicked urlRequest ->
+        ( LinkClicked urlRequest, _ ) ->
             case urlRequest of
                 Browser.Internal url ->
                     ( model, Nav.pushUrl model.key (Url.toString url) )
@@ -95,8 +111,25 @@ update msg model =
                 Browser.External href ->
                     ( model, Nav.load href )
 
-        UrlChanged url ->
+        ( UrlChanged url, _ ) ->
             ( { model | url = url, page = loadPage url model.maybeUser }, Cmd.none )
+
+        ( GoToRoute route, _ ) ->
+            ( model, Nav.pushUrl model.key (Route.toString route) )
+
+        ( HomePageMsg pageMsg, Home pageModel ) ->
+            ( model, Cmd.none )
+
+        {-
+           case pageMsg of
+               Increase ->
+                   ({model | page = Home (pageModel + 1)}, Cmd.none)
+
+               Decrease ->
+                   ({model | page = Home (pageModel - 1)}, Cmd.none)
+        -}
+        ( _, _ ) ->
+            ( model, Cmd.none )
 
 
 loadPage : Url.Url -> Maybe User -> Page
@@ -106,7 +139,7 @@ loadPage url maybeUser =
             NotFound
 
         Route.Home ->
-            Home
+            Home Nothing
 
         Route.Page id ->
             Page id
@@ -133,15 +166,26 @@ authConfig route =
             allow
 
         Route.Home ->
-            allow
+            hasAnyRole [ Admin, SimpleUser ]
 
         Route.Page id ->
-            allow
+            hasAnyRole [ Admin ]
 
 
 allow : Maybe User -> Bool
 allow maybeUser =
     True
+
+
+hasAnyRole : List Role -> (Maybe User -> Bool)
+hasAnyRole allowedRoles =
+    \maybeUser ->
+        case maybeUser of
+            Nothing ->
+                False
+
+            Just user ->
+                List.member (getRole user) allowedRoles
 
 
 
@@ -185,9 +229,22 @@ pageView model =
             h1 [ class "title is-1" ]
                 [ text "Not found" ]
 
-        Home ->
-            h1 [ class "title is-1" ]
-                [ text "Home" ]
+        Home id ->
+            div []
+                [ h1 [ class "title is-1" ]
+                    [ text "Home" ]
+                , h1 [ class "subtitle is-3" ]
+                    [ text ("Value: " ++ String.fromInt 1) ]
+                , button [ class "button", onClick Increase ]
+                    [ text "Increase" ]
+                , button [ class "button", onClick Decrease ]
+                    [ text "Decrease" ]
+
+                {- }                , button [ class "button", onClick (GoToRoute (Route.Page id))]
+                   [ text ("/page/" ++ (String.fromInt id)) ]
+                -}
+                ]
+                |> Html.map HomePageMsg
 
         Page id ->
             h1 [ class "title is-1" ]
