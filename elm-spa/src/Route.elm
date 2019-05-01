@@ -6,9 +6,9 @@ import Url.Parser.Query as Query
 
 
 type Route
-    = Home
-    | NotFound
-    | ReloadSession
+    = NotFound
+    | Home
+    | Page Int
 
 
 router : Url.Url -> Route
@@ -20,5 +20,5 @@ routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         [ map Home top
-        , map ReloadSession (s "reload-session")
+        , map Page (s "page" </> int)
         ]

@@ -1,39 +1,36 @@
-module Main exposing (Model, Msg(..), init, main, subscriptions, update, view)
+module Main exposing (Model, Msg(..), init, main, update, view)
 
-import Api
 import Browser
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Http
-import Menu
-import Role
 import Route
-import Session
+import Task
 import Url
-import User
 
 
 main : Program () Model Msg
 main =
     Browser.application
         { init = init
-        , view = view
         , update = update
+        , view = view
         , subscriptions = subscriptions
-        , onUrlChange = UrlChanged
         , onUrlRequest = LinkClicked
+        , onUrlChange = UrlChanged
         }
 
 
 
---MODEL
+-- MODEL
 
 
 type alias Model =
-    { isMenuOpen : Bool
-    , session : Session.Session
+    { url : Url.Url
+    , key : Nav.Key
+    , maybeUser : Maybe User
+    , page : Page
     }
 
 
@@ -41,17 +38,28 @@ type Page
     = Loading
     | NotFound
     | Home
+    | Page Int
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    let
-        session =
-            Session.guest key url
-    in
-    ( Model False session
-    , Api.loadSession GotSession
-    )
+    ( Model url key Nothing Loading, send (InitPage (Just adminUser)) )
+
+
+adminUser : User
+adminUser =
+    User "Adrienn" Admin
+
+
+simpleUser : User
+simpleUser =
+    User "Kristóf" SimpleUser
+
+
+send : Msg -> Cmd Msg
+send msg =
+    Task.succeed msg
+        |> Task.perform identity
 
 
 
@@ -59,30 +67,81 @@ init flags url key =
 
 
 type Msg
-    = UrlChanged Url.Url
+    = InitPage (Maybe User)
     | LinkClicked Browser.UrlRequest
-    | ToggleMenu
-    | GotSession (Result Http.Error User.User)
+    | UrlChanged Url.Url
+
+
+type User
+    = User String Role
+
+
+type Role
+    = Admin
+    | SimpleUser
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ToggleMenu ->
-            ( { model | isMenuOpen = not model.isMenuOpen }, Cmd.none )
+        InitPage maybeUser ->
+            ( { model | page = loadPage model.url model.maybeUser }, Cmd.none )
 
-        GotSession result ->
-            case result of
-                Ok user ->
-                    ( { model | session = Session.toSignedIn model.session user }
-                    , Cmd.none
-                    )
+        LinkClicked urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Nav.pushUrl model.key (Url.toString url) )
 
-                Err _ ->
-                    ( model, Cmd.none )
+                Browser.External href ->
+                    ( model, Nav.load href )
 
-        _ ->
-            ( model, Cmd.none )
+        UrlChanged url ->
+            ( { model | url = url, page = loadPage url model.maybeUser }, Cmd.none )
+
+
+loadPage : Url.Url -> Maybe User -> Page
+loadPage url maybeUser =
+    case authorize (Route.router url) maybeUser of
+        Route.NotFound ->
+            NotFound
+
+        Route.Home ->
+            Home
+
+        Route.Page id ->
+            Page id
+
+
+authorize : Route.Route -> Maybe User -> Route.Route
+authorize route maybeUser =
+    let
+        authPredicate =
+            authConfig route
+    in
+    case authPredicate maybeUser of
+        True ->
+            route
+
+        False ->
+            Route.NotFound
+
+
+authConfig : Route.Route -> (Maybe User -> Bool)
+authConfig route =
+    case route of
+        Route.NotFound ->
+            allow
+
+        Route.Home ->
+            allow
+
+        Route.Page id ->
+            allow
+
+
+allow : Maybe User -> Bool
+allow maybeUser =
+    True
 
 
 
@@ -93,75 +152,46 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Elm SPA"
     , body =
-        [ headerView model.isMenuOpen model.session
+        [ navBar model
+        , div [ class "section" ]
+            [ div [ class "container" ]
+                [ pageView model
+                ]
+            ]
         ]
     }
 
 
-headerView : Bool -> Session.Session -> Html Msg
-headerView isMenuOpen session =
-    let
-        menuView =
-            case session of
-                Session.NotSignedIn _ _ _ ->
-                    [ div [ class "navbar-start" ]
-                        [ a [ class "navbar-item", href "/login" ] [ text "Login" ]
-                        ]
-                    ]
-
-                Session.SignedIn _ _ _ user ->
-                    [ div [ class "navbar-start" ] (roleBasedMenuView user)
-                    , div [ class "navbar-end" ]
-                        [ div [ class "navbar-item" ]
-                            [ div [ class "buttons" ]
-                                [ a [ class "button is-light", href "/logout" ]
-                                    [ text "Logout" ]
-                                ]
-                            ]
-                        ]
-                    ]
-    in
-    nav [ class "navbar is-link", attribute "role" "navigation", attribute "aria-label" "main navigation" ]
-        [ div [ class "navbar-brand" ]
-            [ a [ class "navbar-item", href "/" ] [ strong [] [ text "╦╣" ] ]
-            , span
-                [ onClick ToggleMenu
-                , class "navbar-burger burger"
-                , attribute "role" "button"
-                , attribute "aria-label" "menu"
-                , attribute "aria-expanded" (boolToString isMenuOpen)
-                , attribute "data-target" "navItems"
-                ]
-                [ span [ attribute "aria-hidden" "true" ] []
-                , span [ attribute "aria-hidden" "true" ] []
-                , span [ attribute "aria-hidden" "true" ] []
-                ]
-            ]
-        , div [ id "navItems", classList [ ( "navbar-menu", True ), ( "is-active", isMenuOpen ) ] ]
-            menuView
+navBar : Model -> Html Msg
+navBar model =
+    div [ class "container" ]
+        [ a [ href "/", class "button" ]
+            [ text "Home" ]
+        , a [ href "/page/1", class "button" ]
+            [ text "/page/1" ]
+        , a [ href "/page/2", class "button" ]
+            [ text "/page/2" ]
         ]
 
 
-roleBasedMenuView : User.User -> List (Html Msg)
-roleBasedMenuView user =
-    case user.role of
-        Role.Admin ->
-            [ a [ class "navbar-item", href "/" ] [ strong [] [ text "Home" ] ]
-            ]
+pageView : Model -> Html Msg
+pageView model =
+    case model.page of
+        Loading ->
+            h1 [ class "title is-1" ]
+                [ text "Loading" ]
 
-        Role.User ->
-            [ a [ class "navbar-item", href "/" ] [ strong [] [ text "Home" ] ]
-            ]
+        NotFound ->
+            h1 [ class "title is-1" ]
+                [ text "Not found" ]
 
+        Home ->
+            h1 [ class "title is-1" ]
+                [ text "Home" ]
 
-boolToString : Bool -> String
-boolToString value =
-    case value of
-        True ->
-            "true"
-
-        False ->
-            "false"
+        Page id ->
+            h1 [ class "title is-1" ]
+                [ text ("Page " ++ String.fromInt id) ]
 
 
 
