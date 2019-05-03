@@ -2,9 +2,11 @@ module Main exposing (Model, Msg(..), init, main, update, view)
 
 import Browser
 import Browser.Navigation as Nav
+import Command
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Page.Resources as ResourcesPage
 import Route
 import Task
 import Url
@@ -38,7 +40,7 @@ type Page
     = Loading
     | NotFound
     | Home HomeModel
-    | Page Int
+    | Resources ResourcesPage.Model
 
 
 type alias HomeModel =
@@ -47,7 +49,7 @@ type alias HomeModel =
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model url key Nothing Loading, send (InitApp (Just adminUser)) )
+    ( Model url key Nothing Loading, Command.send (InitApp (Just adminUser)) )
 
 
 adminUser : User
@@ -60,12 +62,6 @@ simpleUser =
     User "Kristóf" SimpleUser
 
 
-send : msg -> Cmd msg
-send msg =
-    Task.succeed msg
-        |> Task.perform identity
-
-
 
 -- UPDATE
 
@@ -76,6 +72,7 @@ type Msg
     | UrlChanged Url.Url
     | GoToRoute Route.Route
     | HomePageMsg HomeMsg
+    | ResourcesMsg ResourcesPage.Msg
 
 
 type HomeMsg
@@ -112,15 +109,15 @@ update msg model =
                 Browser.External href ->
                     ( model, Nav.load href )
 
+        ( GoToRoute route, _ ) ->
+            ( model, Nav.pushUrl model.key (Route.toString route) )
+
         ( UrlChanged url, _ ) ->
             let
                 ( page, command ) =
                     loadPage url model.maybeUser
             in
             ( { model | url = url, page = page }, command )
-
-        ( GoToRoute route, _ ) ->
-            ( model, Nav.pushUrl model.key (Route.toString route) )
 
         ( HomePageMsg pageMsg, Home pageModel ) ->
             let
@@ -140,6 +137,13 @@ update msg model =
             in
             ( { model | page = Home newPageModel }, pageCommand |> Cmd.map HomePageMsg )
 
+        ( ResourcesMsg pageMsg, Resources pageModel ) ->
+            let
+                ( newPageModel, newPageMsg ) =
+                    ResourcesPage.update pageMsg pageModel
+            in
+            ( { model | page = Resources newPageModel }, Cmd.map ResourcesMsg newPageMsg )
+
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -151,10 +155,14 @@ loadPage url maybeUser =
             ( NotFound, Cmd.none )
 
         Route.Home ->
-            ( Home Nothing, Cmd.map HomePageMsg (send (InitHomePage 10)) )
+            ( Home Nothing, Cmd.map HomePageMsg (Command.send (InitHomePage 10)) )
 
-        Route.Page id ->
-            ( Page id, Cmd.none )
+        Route.Page id maybePageNumber ->
+            let
+                ( pageModel, pageMsg ) =
+                    ResourcesPage.init id
+            in
+            ( Resources pageModel, Cmd.map ResourcesMsg pageMsg )
 
 
 authorize : Route.Route -> Maybe User -> Route.Route
@@ -180,7 +188,7 @@ authConfig route =
         Route.Home ->
             hasAnyRole [ Admin, SimpleUser ]
 
-        Route.Page id ->
+        Route.Page id maybePageNumber ->
             hasAnyRole [ Admin ]
 
 
@@ -254,7 +262,7 @@ pageView model =
                         , button [ class "button", onClick Decrease ]
                             [ text "Decrease" ]
                         , div []
-                            [ a [ class "button", href (Route.toString (Route.Page id)) ]
+                            [ a [ class "button", href (Route.toString (Route.Page id (Just 10))) ]
                                 [ text ("/page/" ++ String.fromInt id) ]
                             ]
                         ]
@@ -266,9 +274,9 @@ pageView model =
                 )
                 |> Html.map HomePageMsg
 
-        Page id ->
-            h1 [ class "title is-1" ]
-                [ text ("Page " ++ String.fromInt id) ]
+        Resources pageModel ->
+            ResourcesPage.view pageModel
+                |> Html.map ResourcesMsg
 
 
 

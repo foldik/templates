@@ -8,7 +8,7 @@ import Url.Parser.Query as Query
 type Route
     = NotFound
     | Home
-    | Page Int
+    | Page Int (Maybe Int)
 
 
 router : Url.Url -> Route
@@ -20,7 +20,7 @@ routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         [ map Home top
-        , map Page (s "page" </> int)
+        , map Page (s "page" </> int <?> Query.int "page")
         ]
 
 
@@ -33,5 +33,10 @@ toString route =
         Home ->
             "/"
 
-        Page id ->
-            "/page/" ++ String.fromInt id
+        Page id maybePageNumber ->
+            case maybePageNumber of
+                Just pageNumber ->
+                    "/page/" ++ String.fromInt id ++ "?page=" ++ String.fromInt pageNumber
+
+                Nothing ->
+                    "/page/" ++ String.fromInt id
