@@ -6,6 +6,7 @@ import Command
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Page.Home as HomePage
 import Page.Resources as ResourcesPage
 import Route
 import Task
@@ -39,12 +40,8 @@ type alias Model =
 type Page
     = Loading
     | NotFound
-    | Home HomeModel
+    | Home HomePage.Model
     | Resources ResourcesPage.Model
-
-
-type alias HomeModel =
-    Maybe Int
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -71,14 +68,8 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | GoToRoute Route.Route
-    | HomePageMsg HomeMsg
+    | HomeMsg HomePage.Msg
     | ResourcesMsg ResourcesPage.Msg
-
-
-type HomeMsg
-    = Increase
-    | Decrease
-    | InitHomePage Int
 
 
 type User
@@ -119,23 +110,12 @@ update msg model =
             in
             ( { model | url = url, page = page }, command )
 
-        ( HomePageMsg pageMsg, Home pageModel ) ->
+        ( HomeMsg pageMsg, Home pageModel ) ->
             let
-                ( newPageModel, pageCommand ) =
-                    case ( pageMsg, pageModel ) of
-                        ( Increase, Just id ) ->
-                            ( Just (id + 1), Cmd.none )
-
-                        ( Decrease, Just id ) ->
-                            ( Just (id - 1), Cmd.none )
-
-                        ( InitHomePage id, Nothing ) ->
-                            ( Just id, Cmd.none )
-
-                        ( _, _ ) ->
-                            ( pageModel, Cmd.none )
+                ( newPageModel, newPageMsg ) =
+                    HomePage.update pageMsg pageModel
             in
-            ( { model | page = Home newPageModel }, pageCommand |> Cmd.map HomePageMsg )
+            ( { model | page = Home newPageModel }, Cmd.map HomeMsg newPageMsg )
 
         ( ResourcesMsg pageMsg, Resources pageModel ) ->
             let
@@ -155,7 +135,11 @@ loadPage url maybeUser =
             ( NotFound, Cmd.none )
 
         Route.Home ->
-            ( Home Nothing, Cmd.map HomePageMsg (Command.send (InitHomePage 10)) )
+            let
+                ( pageModel, pageMsg ) =
+                    HomePage.init
+            in
+            ( Home pageModel, Cmd.map HomeMsg pageMsg )
 
         Route.Page id maybePageNumber ->
             let
@@ -249,30 +233,9 @@ pageView model =
             h1 [ class "title is-1" ]
                 [ text "Not found" ]
 
-        Home maybeId ->
-            div []
-                (case maybeId of
-                    Just id ->
-                        [ h1 [ class "title is-1" ]
-                            [ text "Home" ]
-                        , h1 [ class "subtitle is-3" ]
-                            [ text ("Value: " ++ String.fromInt id) ]
-                        , button [ class "button", onClick Increase ]
-                            [ text "Increase" ]
-                        , button [ class "button", onClick Decrease ]
-                            [ text "Decrease" ]
-                        , div []
-                            [ a [ class "button", href (Route.toString (Route.Page id (Just 10))) ]
-                                [ text ("/page/" ++ String.fromInt id) ]
-                            ]
-                        ]
-
-                    Nothing ->
-                        [ h1 [ class "title is-1" ]
-                            [ text "Initializing Hme page" ]
-                        ]
-                )
-                |> Html.map HomePageMsg
+        Home pageModel ->
+            HomePage.view pageModel
+                |> Html.map HomeMsg
 
         Resources pageModel ->
             ResourcesPage.view pageModel
