@@ -47,14 +47,14 @@ authorize route maybeUser =
 authConfig : Route -> (Maybe User.User -> Bool)
 authConfig route =
     case route of
-        NotFound ->
-            allow
-
         Home ->
             hasAnyRole [ Role.Admin, Role.SimpleUser ]
 
         Page id maybePageNumber ->
             hasAnyRole [ Role.Admin ]
+
+        _ ->
+            allow
 
 
 allow : Maybe User.User -> Bool

@@ -3,6 +3,7 @@ module Main exposing (Model, Msg(..), init, main, update, view)
 import Browser
 import Browser.Navigation as Nav
 import Command
+import Dummy
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -50,17 +51,7 @@ type Page
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model url key Nothing Loading, Command.send (InitApp (Just adminUser)) )
-
-
-adminUser : User.User
-adminUser =
-    User.User "Adrienn" Role.Admin
-
-
-simpleUser : User.User
-simpleUser =
-    User.User "Kristóf" Role.SimpleUser
+    ( Model url key Nothing Loading, Command.send (InitApp (Just Dummy.adminUser)) )
 
 
 
