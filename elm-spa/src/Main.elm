@@ -9,6 +9,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Model.Role as Role
 import Model.User as User
+import Navbar
 import Page.Home as HomePage
 import Page.Loading as LoadingPage
 import Page.NotFound as NotFoundPage
@@ -38,6 +39,7 @@ type alias Model =
     { url : Url.Url
     , key : Nav.Key
     , maybeUser : Maybe User.User
+    , navbar : Navbar.Model
     , page : Page
     }
 
@@ -51,7 +53,11 @@ type Page
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( Model url key Nothing Loading, Command.send (InitApp (Just Dummy.adminUser)) )
+    let
+        maybeUser =
+            Just Dummy.adminUser
+    in
+    ( Model url key Nothing (Navbar.Model Nothing False) Loading, Command.send (InitApp maybeUser) )
 
 
 
@@ -63,7 +69,7 @@ type Msg
     | InitApp (Maybe User.User)
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
-    | GoToRoute Route.Route
+    | NavMSg Navbar.Msg
     | HomeMsg HomePage.Msg
     | ResourcesMsg ResourcesPage.Msg
 
@@ -72,7 +78,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.page ) of
         ( InitApp maybeUser, _ ) ->
-            ( { model | maybeUser = maybeUser }, Nav.pushUrl model.key (Url.toString model.url) )
+            ( { model | maybeUser = maybeUser, navbar = Navbar.Model maybeUser False }, Nav.pushUrl model.key (Url.toString model.url) )
 
         ( LinkClicked urlRequest, _ ) ->
             case urlRequest of
@@ -82,15 +88,15 @@ update msg model =
                 Browser.External href ->
                     ( model, Nav.load href )
 
-        ( GoToRoute route, _ ) ->
-            ( model, Nav.pushUrl model.key (Route.toString route) )
-
         ( UrlChanged url, _ ) ->
             let
                 ( page, command ) =
                     loadPage url model.maybeUser
             in
             ( { model | url = url, page = page }, command )
+
+        ( NavMSg navMsg, _ ) ->
+            ( model, Cmd.none )
 
         ( HomeMsg pageMsg, Home pageModel ) ->
             updatePage Home pageModel HomeMsg pageMsg HomePage.update model
@@ -140,7 +146,7 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Elm SPA"
     , body =
-        [ navBar model
+        [ Navbar.view model.navbar |> Html.map NavMSg
         , div [ class "section" ]
             [ div [ class "container" ]
                 [ pageView model
@@ -148,18 +154,6 @@ view model =
             ]
         ]
     }
-
-
-navBar : Model -> Html Msg
-navBar model =
-    div [ class "container" ]
-        [ a [ href "/", class "button" ]
-            [ text "Home" ]
-        , a [ href "/page/1", class "button" ]
-            [ text "/page/1" ]
-        , a [ href "/page/2", class "button" ]
-            [ text "/page/2" ]
-        ]
 
 
 pageView : Model -> Html Msg
