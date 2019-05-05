@@ -25,7 +25,7 @@ type alias NavConfig =
 
 type NavItem
     = NavItem Route.Route
-    | Dropdown (List SubNavItem)
+    | Dropdown String (List SubNavItem)
     | Button Route.Route
 
 
@@ -37,6 +37,10 @@ menu : NavConfig
 menu =
     NavConfig
         [ NavItem (Route.Resources 10 Nothing)
+        , Dropdown "More"
+            [ SubNavItem (Route.Resources 2 Nothing)
+            , SubNavItem (Route.Resources 3 Nothing)
+            ]
         ]
 
 
@@ -49,16 +53,37 @@ filterAuthorized : Maybe User.User -> NavConfig -> NavConfig
 filterAuthorized maybeUser navConfig =
     let
         start =
-            List.filter
-                (\navItem ->
-                    case navItem of
-                        NavItem route ->
-                            Route.authorized route maybeUser
+            navConfig.start
+                |> List.filter
+                    (\navItem ->
+                        case navItem of
+                            NavItem route ->
+                                Route.authorized route maybeUser
 
-                        _ ->
-                            True
-                )
-                navConfig.start
+                            Button route ->
+                                Route.authorized route maybeUser
+
+                            _ ->
+                                True
+                    )
+                |> List.map
+                    (\navItem ->
+                        case navItem of
+                            Dropdown name subNavItems ->
+                                Dropdown name (List.filter (\(SubNavItem route) -> Route.authorized route maybeUser) subNavItems)
+
+                            _ ->
+                                navItem
+                    )
+                |> List.filter
+                    (\navItem ->
+                        case navItem of
+                            Dropdown name subNavItems ->
+                                not (List.isEmpty subNavItems)
+
+                            _ ->
+                                True
+                    )
     in
     NavConfig start
 
@@ -129,12 +154,25 @@ navStartView navConfig =
         (\navItem ->
             case navItem of
                 NavItem route ->
-                    a [ class "navbar-item", href (Route.toLink route), onClick Close ] [ text (Route.toString route) ]
+                    navBarItemView route
+
+                Dropdown name subNavItems ->
+                    div [ class "navbar-item has-dropdown is-hoverable" ]
+                        [ span [ class "navbar-link" ]
+                            [ text name ]
+                        , div [ class "navbar-dropdown" ]
+                            (List.map (\(SubNavItem route) -> navBarItemView route) subNavItems)
+                        ]
 
                 _ ->
                     div [] []
         )
         navConfig.start
+
+
+navBarItemView : Route.Route -> Html Msg
+navBarItemView route =
+    a [ class "navbar-item", href (Route.toLink route), onClick Close ] [ text (Route.toString route) ]
 
 
 boolToString : Bool -> String
