@@ -1,14 +1,15 @@
 module Page.Loading exposing (view)
 
-import Html exposing(..)
-import Html.Attributes exposing(..)
-import Html.Events exposing(..)
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
+
+
 
 -- MODEL
-
 -- UPDATE
-
 -- VIEW
+
 
 view : Html ()
 view =

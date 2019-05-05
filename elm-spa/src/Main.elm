@@ -6,10 +6,12 @@ import Command
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Model.Role as Role
+import Model.User as User
 import Page.Home as HomePage
-import Page.Resources as ResourcesPage
-import Page.NotFound as NotFoundPage
 import Page.Loading as LoadingPage
+import Page.NotFound as NotFoundPage
+import Page.Resources as ResourcesPage
 import Route
 import Task
 import Url
@@ -34,7 +36,7 @@ main =
 type alias Model =
     { url : Url.Url
     , key : Nav.Key
-    , maybeUser : Maybe User
+    , maybeUser : Maybe User.User
     , page : Page
     }
 
@@ -51,14 +53,14 @@ init flags url key =
     ( Model url key Nothing Loading, Command.send (InitApp (Just adminUser)) )
 
 
-adminUser : User
+adminUser : User.User
 adminUser =
-    User "Adrienn" Admin
+    User.User "Adrienn" Role.Admin
 
 
-simpleUser : User
+simpleUser : User.User
 simpleUser =
-    User "Kristóf" SimpleUser
+    User.User "Kristóf" Role.SimpleUser
 
 
 
@@ -67,26 +69,12 @@ simpleUser =
 
 type Msg
     = NoOp ()
-    | InitApp (Maybe User)
+    | InitApp (Maybe User.User)
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | GoToRoute Route.Route
     | HomeMsg HomePage.Msg
     | ResourcesMsg ResourcesPage.Msg
-
-
-type User
-    = User String Role
-
-
-getRole : User -> Role
-getRole (User name role) =
-    role
-
-
-type Role
-    = Admin
-    | SimpleUser
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -122,17 +110,10 @@ update msg model =
         ( _, _ ) ->
             ( model, Cmd.none )
 
-updatePage : (p -> Page) -> p -> (a -> Msg) -> a -> (a -> p -> (p, Cmd a)) -> Model -> (Model, Cmd Msg)
-updatePage toPage pageModel toMsg pageMsg updateFn model =
-    let
-        (newPageModel, newPageMsg) = updateFn pageMsg pageModel
-    in
-    ( { model | page = toPage newPageModel }, Cmd.map toMsg newPageMsg )
 
-
-loadPage : Url.Url -> Maybe User -> ( Page, Cmd Msg )
+loadPage : Url.Url -> Maybe User.User -> ( Page, Cmd Msg )
 loadPage url maybeUser =
-    case authorize (Route.router url) maybeUser of
+    case Route.router url maybeUser of
         Route.NotFound ->
             ( NotFound, Cmd.none )
 
@@ -151,47 +132,13 @@ loadPage url maybeUser =
             ( Resources pageModel, Cmd.map ResourcesMsg pageMsg )
 
 
-authorize : Route.Route -> Maybe User -> Route.Route
-authorize route maybeUser =
+updatePage : (p -> Page) -> p -> (a -> Msg) -> a -> (a -> p -> ( p, Cmd a )) -> Model -> ( Model, Cmd Msg )
+updatePage toPage pageModel toMsg pageMsg updateFn model =
     let
-        authPredicate =
-            authConfig route
+        ( newPageModel, newPageMsg ) =
+            updateFn pageMsg pageModel
     in
-    case authPredicate maybeUser of
-        True ->
-            route
-
-        False ->
-            Route.NotFound
-
-
-authConfig : Route.Route -> (Maybe User -> Bool)
-authConfig route =
-    case route of
-        Route.NotFound ->
-            allow
-
-        Route.Home ->
-            hasAnyRole [ Admin, SimpleUser ]
-
-        Route.Page id maybePageNumber ->
-            hasAnyRole [ Admin ]
-
-
-allow : Maybe User -> Bool
-allow maybeUser =
-    True
-
-
-hasAnyRole : List Role -> (Maybe User -> Bool)
-hasAnyRole allowedRoles =
-    \maybeUser ->
-        case maybeUser of
-            Nothing ->
-                False
-
-            Just user ->
-                List.member (getRole user) allowedRoles
+    ( { model | page = toPage newPageModel }, Cmd.map toMsg newPageMsg )
 
 
 
