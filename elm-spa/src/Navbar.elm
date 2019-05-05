@@ -20,7 +20,9 @@ type alias Model =
 
 
 type alias NavConfig =
-    { start : List NavItem }
+    { start : List NavItem
+    , end : List NavItem
+    }
 
 
 type NavItem
@@ -37,7 +39,8 @@ menu : NavConfig
 menu =
     NavConfig
         [ NavItem (Route.Resources 10 Nothing)
-        , Dropdown "More"
+        ]
+        [ Dropdown "User Logo"
             [ SubNavItem (Route.Resources 2 Nothing)
             , SubNavItem (Route.Resources 3 Nothing)
             ]
@@ -46,46 +49,52 @@ menu =
 
 init : Maybe User.User -> Model
 init maybeUser =
-    Model maybeUser False (filterAuthorized maybeUser menu)
-
-
-filterAuthorized : Maybe User.User -> NavConfig -> NavConfig
-filterAuthorized maybeUser navConfig =
     let
-        start =
-            navConfig.start
-                |> List.filter
-                    (\navItem ->
-                        case navItem of
-                            NavItem route ->
-                                Route.authorized route maybeUser
-
-                            Button route ->
-                                Route.authorized route maybeUser
-
-                            _ ->
-                                True
-                    )
-                |> List.map
-                    (\navItem ->
-                        case navItem of
-                            Dropdown name subNavItems ->
-                                Dropdown name (List.filter (\(SubNavItem route) -> Route.authorized route maybeUser) subNavItems)
-
-                            _ ->
-                                navItem
-                    )
-                |> List.filter
-                    (\navItem ->
-                        case navItem of
-                            Dropdown name subNavItems ->
-                                not (List.isEmpty subNavItems)
-
-                            _ ->
-                                True
-                    )
+        navConfig =
+            menu
     in
-    NavConfig start
+    Model
+        maybeUser
+        False
+        (NavConfig
+            (filterAuthorized maybeUser navConfig.start)
+            (filterAuthorized maybeUser navConfig.end)
+        )
+
+
+filterAuthorized : Maybe User.User -> List NavItem -> List NavItem
+filterAuthorized maybeUser navItems =
+    navItems
+        |> List.filter
+            (\navItem ->
+                case navItem of
+                    NavItem route ->
+                        Route.authorized route maybeUser
+
+                    Button route ->
+                        Route.authorized route maybeUser
+
+                    _ ->
+                        True
+            )
+        |> List.map
+            (\navItem ->
+                case navItem of
+                    Dropdown name subNavItems ->
+                        Dropdown name (List.filter (\(SubNavItem route) -> Route.authorized route maybeUser) subNavItems)
+
+                    _ ->
+                        navItem
+            )
+        |> List.filter
+            (\navItem ->
+                case navItem of
+                    Dropdown name subNavItems ->
+                        not (List.isEmpty subNavItems)
+
+                    _ ->
+                        True
+            )
 
 
 
@@ -127,7 +136,9 @@ view model =
             ]
         , div [ id "navItems", classList [ ( "navbar-menu", True ), ( "is-active", model.isOpen ) ] ]
             [ div [ class "navbar-start" ]
-                (navStartView model.config)
+                (navRegion model.config.start)
+            , div [ class "navbar-end" ]
+                (navRegion model.config.end)
             ]
         ]
 
@@ -148,8 +159,8 @@ hamburgerButton model =
         ]
 
 
-navStartView : NavConfig -> List (Html Msg)
-navStartView navConfig =
+navRegion : List NavItem -> List (Html Msg)
+navRegion navItems =
     List.map
         (\navItem ->
             case navItem of
@@ -167,7 +178,7 @@ navStartView navConfig =
                 _ ->
                     div [] []
         )
-        navConfig.start
+        navItems
 
 
 navBarItemView : Route.Route -> Html Msg

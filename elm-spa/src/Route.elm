@@ -88,11 +88,6 @@ authConfig route =
             allow
 
 
-allow : Maybe User.User -> Bool
-allow maybeUser =
-    True
-
-
 hasAnyRole : List Role.Role -> (Maybe User.User -> Bool)
 hasAnyRole allowedRoles =
     \maybeUser ->
@@ -102,3 +97,18 @@ hasAnyRole allowedRoles =
 
             Just user ->
                 List.member (User.getRole user) allowedRoles
+
+
+authenticated : Maybe User.User -> Bool
+authenticated maybeUser =
+    case maybeUser of
+        Just _ ->
+            True
+
+        Nothing ->
+            False
+
+
+allow : Maybe User.User -> Bool
+allow maybeUser =
+    True
