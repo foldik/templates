@@ -8,6 +8,8 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Page.Home as HomePage
 import Page.Resources as ResourcesPage
+import Page.NotFound as NotFoundPage
+import Page.Loading as LoadingPage
 import Route
 import Task
 import Url
@@ -64,7 +66,8 @@ simpleUser =
 
 
 type Msg
-    = InitApp (Maybe User)
+    = NoOp ()
+    | InitApp (Maybe User)
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | GoToRoute Route.Route
@@ -111,21 +114,20 @@ update msg model =
             ( { model | url = url, page = page }, command )
 
         ( HomeMsg pageMsg, Home pageModel ) ->
-            let
-                ( newPageModel, newPageMsg ) =
-                    HomePage.update pageMsg pageModel
-            in
-            ( { model | page = Home newPageModel }, Cmd.map HomeMsg newPageMsg )
+            updatePage Home pageModel HomeMsg pageMsg HomePage.update model
 
         ( ResourcesMsg pageMsg, Resources pageModel ) ->
-            let
-                ( newPageModel, newPageMsg ) =
-                    ResourcesPage.update pageMsg pageModel
-            in
-            ( { model | page = Resources newPageModel }, Cmd.map ResourcesMsg newPageMsg )
+            updatePage Resources pageModel ResourcesMsg pageMsg ResourcesPage.update model
 
         ( _, _ ) ->
             ( model, Cmd.none )
+
+updatePage : (p -> Page) -> p -> (a -> Msg) -> a -> (a -> p -> (p, Cmd a)) -> Model -> (Model, Cmd Msg)
+updatePage toPage pageModel toMsg pageMsg updateFn model =
+    let
+        (newPageModel, newPageMsg) = updateFn pageMsg pageModel
+    in
+    ( { model | page = toPage newPageModel }, Cmd.map toMsg newPageMsg )
 
 
 loadPage : Url.Url -> Maybe User -> ( Page, Cmd Msg )
@@ -226,12 +228,12 @@ pageView : Model -> Html Msg
 pageView model =
     case model.page of
         Loading ->
-            h1 [ class "title is-1" ]
-                [ text "Loading" ]
+            LoadingPage.view
+                |> Html.map NoOp
 
         NotFound ->
-            h1 [ class "title is-1" ]
-                [ text "Not found" ]
+            NotFoundPage.view
+                |> Html.map NoOp
 
         Home pageModel ->
             HomePage.view pageModel
