@@ -57,7 +57,7 @@ init flags url key =
         maybeUser =
             Just Dummy.adminUser
     in
-    ( Model url key Nothing (Navbar.Model Nothing False) Loading, Command.send (InitApp maybeUser) )
+    ( Model url key Nothing (Navbar.init Nothing) Loading, Command.send (InitApp maybeUser) )
 
 
 
@@ -69,7 +69,7 @@ type Msg
     | InitApp (Maybe User.User)
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
-    | NavMSg Navbar.Msg
+    | NavMsg Navbar.Msg
     | HomeMsg HomePage.Msg
     | ResourcesMsg ResourcesPage.Msg
 
@@ -78,7 +78,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.page ) of
         ( InitApp maybeUser, _ ) ->
-            ( { model | maybeUser = maybeUser, navbar = Navbar.Model maybeUser False }, Nav.pushUrl model.key (Url.toString model.url) )
+            ( { model | maybeUser = maybeUser, navbar = Navbar.init maybeUser }, Nav.pushUrl model.key (Url.toString model.url) )
 
         ( LinkClicked urlRequest, _ ) ->
             case urlRequest of
@@ -95,8 +95,12 @@ update msg model =
             in
             ( { model | url = url, page = page }, command )
 
-        ( NavMSg navMsg, _ ) ->
-            ( model, Cmd.none )
+        ( NavMsg navMsg, _ ) ->
+            let
+                ( newModel, newMsg ) =
+                    Navbar.update navMsg model.navbar
+            in
+            ( { model | navbar = newModel }, Cmd.map NavMsg newMsg )
 
         ( HomeMsg pageMsg, Home pageModel ) ->
             updatePage Home pageModel HomeMsg pageMsg HomePage.update model
@@ -121,7 +125,7 @@ loadPage url maybeUser =
             in
             ( Home pageModel, Cmd.map HomeMsg pageMsg )
 
-        Route.Page id maybePageNumber ->
+        Route.Resources id maybePageNumber ->
             let
                 ( pageModel, pageMsg ) =
                     ResourcesPage.init id
@@ -146,8 +150,8 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Elm SPA"
     , body =
-        [ Navbar.view model.navbar |> Html.map NavMSg
-        , div [ class "section" ]
+        [ Navbar.view model.navbar |> Html.map NavMsg
+        , div [ class "section", onClick (NavMsg Navbar.Close) ]
             [ div [ class "container" ]
                 [ pageView model
                 ]

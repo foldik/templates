@@ -1,4 +1,4 @@
-module Route exposing (Route(..), router, toString)
+module Route exposing (Route(..), authorized, router, toLink, toString)
 
 import Model.Role as Role
 import Model.User as User
@@ -10,7 +10,38 @@ import Url.Parser.Query as Query
 type Route
     = NotFound
     | Home
-    | Page Int (Maybe Int)
+    | Resources Int (Maybe Int)
+
+
+toLink : Route -> String
+toLink route =
+    case route of
+        NotFound ->
+            "/not-found"
+
+        Home ->
+            "/"
+
+        Resources id maybePageNumber ->
+            case maybePageNumber of
+                Just pageNumber ->
+                    "/resources/" ++ String.fromInt id ++ "?page=" ++ String.fromInt pageNumber
+
+                Nothing ->
+                    "/resources/" ++ String.fromInt id
+
+
+toString : Route -> String
+toString route =
+    case route of
+        NotFound ->
+            "Not found"
+
+        Home ->
+            "Home"
+
+        Resources id maybePageNumber ->
+            "Resources"
 
 
 router : Url.Url -> Maybe User.User -> Route
@@ -19,29 +50,29 @@ router url maybeUser =
         route =
             Maybe.withDefault NotFound (parse routeParser url)
     in
-    authorize route maybeUser
+    case authorized route maybeUser of
+        True ->
+            route
+
+        False ->
+            NotFound
 
 
 routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         [ map Home top
-        , map Page (s "page" </> int <?> Query.int "page")
+        , map Resources (s "resources" </> int <?> Query.int "page")
         ]
 
 
-authorize : Route -> Maybe User.User -> Route
-authorize route maybeUser =
+authorized : Route -> Maybe User.User -> Bool
+authorized route maybeUser =
     let
         authPredicate =
             authConfig route
     in
-    case authPredicate maybeUser of
-        True ->
-            route
-
-        False ->
-            NotFound
+    authPredicate maybeUser
 
 
 authConfig : Route -> (Maybe User.User -> Bool)
@@ -50,7 +81,7 @@ authConfig route =
         Home ->
             hasAnyRole [ Role.Admin, Role.SimpleUser ]
 
-        Page id maybePageNumber ->
+        Resources id maybePageNumber ->
             hasAnyRole [ Role.Admin ]
 
         _ ->
@@ -71,21 +102,3 @@ hasAnyRole allowedRoles =
 
             Just user ->
                 List.member (User.getRole user) allowedRoles
-
-
-toString : Route -> String
-toString route =
-    case route of
-        NotFound ->
-            "/not-found"
-
-        Home ->
-            "/"
-
-        Page id maybePageNumber ->
-            case maybePageNumber of
-                Just pageNumber ->
-                    "/page/" ++ String.fromInt id ++ "?page=" ++ String.fromInt pageNumber
-
-                Nothing ->
-                    "/page/" ++ String.fromInt id
