@@ -12,6 +12,7 @@ import Model.User as User
 import Navbar
 import Page.Home as HomePage
 import Page.Loading as LoadingPage
+import Page.Logout as LogoutPage
 import Page.NotFound as NotFoundPage
 import Page.Preferences as PreferencesPage
 import Page.Resources as ResourcesPage
@@ -49,17 +50,14 @@ type Page
     = Loading
     | NotFound
     | Home HomePage.Model
+    | Logout
     | Preferences PreferencesPage.Model
     | Resources ResourcesPage.Model
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
-    let
-        maybeUser =
-            Just Dummy.adminUser
-    in
-    ( Model url key Nothing (Navbar.init Nothing) Loading, Command.send (InitApp maybeUser) )
+    ( Model url key Nothing (Navbar.init Nothing) Loading, Command.send (InitApp Dummy.user) )
 
 
 
@@ -131,6 +129,9 @@ loadPage url maybeUser =
             in
             ( Home pageModel, Cmd.map HomeMsg pageMsg )
 
+        Route.Logout ->
+            ( Logout, Cmd.none )
+
         Route.Preferences ->
             let
                 ( pageModel, pageMsg ) =
@@ -187,6 +188,10 @@ pageView model =
         Home pageModel ->
             HomePage.view pageModel
                 |> Html.map HomeMsg
+
+        Logout ->
+            LogoutPage.view
+                |> Html.map NoOp
 
         Preferences pageModel ->
             PreferencesPage.view pageModel

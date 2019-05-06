@@ -1,14 +1,24 @@
-module Dummy exposing (adminUser, simpleUser)
+module Dummy exposing (adminUser, simpleUser, user)
 
 import Model.Role as Role
 import Model.User as User
 
 
-adminUser : User.User
+user : Maybe User.User
+user =
+    simpleUser
+
+
+nope : Maybe User.User
+nope =
+    Nothing
+
+
+adminUser : Maybe User.User
 adminUser =
-    User.User "Adrienn" Role.Admin
+    Just (User.User "Adrienn" Role.Admin)
 
 
-simpleUser : User.User
+simpleUser : Maybe User.User
 simpleUser =
-    User.User "Kristóf" Role.SimpleUser
+    Just (User.User "Kristóf" Role.SimpleUser)

@@ -42,6 +42,7 @@ menu =
         ]
         [ Dropdown "User Logo"
             [ SubNavItem Route.Preferences
+            , SubNavItem Route.Logout
             ]
         ]
 
