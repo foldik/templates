@@ -14,6 +14,7 @@ import Page.Home as HomePage
 import Page.Loading as LoadingPage
 import Page.NotFound as NotFoundPage
 import Page.Resources as ResourcesPage
+import Page.Preferences as PreferencesPage
 import Route
 import Task
 import Url
@@ -48,6 +49,7 @@ type Page
     = Loading
     | NotFound
     | Home HomePage.Model
+    | Preferences PreferencesPage.Model
     | Resources ResourcesPage.Model
 
 
@@ -71,6 +73,7 @@ type Msg
     | UrlChanged Url.Url
     | NavMsg Navbar.Msg
     | HomeMsg HomePage.Msg
+    | PreferencesMsg PreferencesPage.Msg
     | ResourcesMsg ResourcesPage.Msg
 
 
@@ -105,6 +108,9 @@ update msg model =
         ( HomeMsg pageMsg, Home pageModel ) ->
             updatePage Home pageModel HomeMsg pageMsg HomePage.update model
 
+        ( PreferencesMsg pageMsg, Preferences pageModel ) ->
+            updatePage Preferences pageModel PreferencesMsg pageMsg PreferencesPage.update model
+
         ( ResourcesMsg pageMsg, Resources pageModel ) ->
             updatePage Resources pageModel ResourcesMsg pageMsg ResourcesPage.update model
 
@@ -124,6 +130,13 @@ loadPage url maybeUser =
                     HomePage.init
             in
             ( Home pageModel, Cmd.map HomeMsg pageMsg )
+
+        Route.Preferences ->
+            let
+                ( pageModel, pageMsg ) =
+                    PreferencesPage.init maybeUser
+            in
+            ( Preferences pageModel, Cmd.map PreferencesMsg pageMsg )
 
         Route.Resources id maybePageNumber ->
             let
@@ -174,6 +187,10 @@ pageView model =
         Home pageModel ->
             HomePage.view pageModel
                 |> Html.map HomeMsg
+
+        Preferences pageModel ->
+            PreferencesPage.view pageModel
+                |> Html.map PreferencesMsg
 
         Resources pageModel ->
             ResourcesPage.view pageModel

@@ -10,6 +10,7 @@ import Url.Parser.Query as Query
 type Route
     = NotFound
     | Home
+    | Preferences
     | Resources Int (Maybe Int)
 
 
@@ -21,6 +22,9 @@ toLink route =
 
         Home ->
             "/"
+
+        Preferences ->
+            "/preferences"
 
         Resources id maybePageNumber ->
             case maybePageNumber of
@@ -39,6 +43,9 @@ toString route =
 
         Home ->
             "Home"
+
+        Preferences ->
+            "Preferences"
 
         Resources id maybePageNumber ->
             "Resources"
@@ -62,6 +69,7 @@ routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         [ map Home top
+        , map Preferences (s "preferences")
         , map Resources (s "resources" </> int <?> Query.int "page")
         ]
 
@@ -80,6 +88,9 @@ authConfig route =
     case route of
         Home ->
             hasAnyRole [ Role.Admin, Role.SimpleUser ]
+
+        Preferences ->
+            authenticated
 
         Resources id maybePageNumber ->
             hasAnyRole [ Role.Admin ]
