@@ -6,7 +6,7 @@ import Model.User as User
 
 user : Maybe User.User
 user =
-    simpleUser
+    adminUser
 
 
 nope : Maybe User.User

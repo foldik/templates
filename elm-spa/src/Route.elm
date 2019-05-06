@@ -10,6 +10,7 @@ import Url.Parser.Query as Query
 type Route
     = NotFound
     | Home
+    | Login
     | Logout
     | Preferences
     | Resources Int (Maybe Int)
@@ -23,6 +24,9 @@ toLink route =
 
         Home ->
             "/"
+
+        Login ->
+            "/login"
 
         Logout ->
             "/logout"
@@ -47,6 +51,9 @@ toString route =
 
         Home ->
             "Home"
+
+        Login ->
+            "Login"
 
         Logout ->
             "Logout"
@@ -76,6 +83,7 @@ routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         [ map Home top
+        , map Login (s "login")
         , map Logout (s "logout")
         , map Preferences (s "preferences")
         , map Resources (s "resources" </> int <?> Query.int "page")
@@ -96,6 +104,9 @@ authConfig route =
     case route of
         Home ->
             hasAnyRole [ Role.Admin, Role.SimpleUser ]
+
+        Login ->
+            notAuthenticated
 
         Logout ->
             authenticated
@@ -129,6 +140,16 @@ authenticated maybeUser =
 
         Nothing ->
             False
+
+
+notAuthenticated : Maybe User.User -> Bool
+notAuthenticated maybeUser =
+    case maybeUser of
+        Just _ ->
+            False
+
+        Nothing ->
+            True
 
 
 allow : Maybe User.User -> Bool

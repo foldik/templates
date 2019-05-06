@@ -44,6 +44,7 @@ menu =
             [ SubNavItem Route.Preferences
             , SubNavItem Route.Logout
             ]
+        , Button Route.Login
         ]
 
 
@@ -175,8 +176,13 @@ navRegion navItems =
                             (List.map (\(SubNavItem route) -> navBarItemView route) subNavItems)
                         ]
 
-                _ ->
-                    div [] []
+                Button route ->
+                    div [ class "navbar-item" ]
+                        [ div [ class "buttons" ]
+                            [ a [ class "button is-light", href (Route.toLink route) ]
+                                [ text (Route.toString route) ]
+                            ]
+                        ]
         )
         navItems
 

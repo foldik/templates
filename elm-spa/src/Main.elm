@@ -12,6 +12,7 @@ import Model.User as User
 import Navbar
 import Page.Home as HomePage
 import Page.Loading as LoadingPage
+import Page.Login as LoginPage
 import Page.Logout as LogoutPage
 import Page.NotFound as NotFoundPage
 import Page.Preferences as PreferencesPage
@@ -50,6 +51,7 @@ type Page
     = Loading
     | NotFound
     | Home HomePage.Model
+    | Login LoginPage.Model
     | Logout
     | Preferences PreferencesPage.Model
     | Resources ResourcesPage.Model
@@ -70,6 +72,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | NavMsg Navbar.Msg
+    | LoginMsg LoginPage.Msg
     | HomeMsg HomePage.Msg
     | PreferencesMsg PreferencesPage.Msg
     | ResourcesMsg ResourcesPage.Msg
@@ -103,6 +106,9 @@ update msg model =
             in
             ( { model | navbar = newModel }, Cmd.map NavMsg newMsg )
 
+        ( LoginMsg pageMsg, Login pageModel ) ->
+            updatePage Login pageModel LoginMsg pageMsg LoginPage.update model
+
         ( HomeMsg pageMsg, Home pageModel ) ->
             updatePage Home pageModel HomeMsg pageMsg HomePage.update model
 
@@ -128,6 +134,13 @@ loadPage url maybeUser =
                     HomePage.init
             in
             ( Home pageModel, Cmd.map HomeMsg pageMsg )
+
+        Route.Login ->
+            let
+                ( pageModel, pageMsg ) =
+                    LoginPage.init
+            in
+            ( Login pageModel, Cmd.map LoginMsg pageMsg )
 
         Route.Logout ->
             ( Logout, Cmd.none )
@@ -188,6 +201,10 @@ pageView model =
         Home pageModel ->
             HomePage.view pageModel
                 |> Html.map HomeMsg
+
+        Login pageModel ->
+            LoginPage.view pageModel
+                |> Html.map LoginMsg
 
         Logout ->
             LogoutPage.view
