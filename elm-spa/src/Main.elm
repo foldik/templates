@@ -13,8 +13,8 @@ import Navbar
 import Page.Home as HomePage
 import Page.Loading as LoadingPage
 import Page.NotFound as NotFoundPage
-import Page.Resources as ResourcesPage
 import Page.Preferences as PreferencesPage
+import Page.Resources as ResourcesPage
 import Route
 import Task
 import Url

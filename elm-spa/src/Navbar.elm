@@ -41,7 +41,7 @@ menu =
         [ NavItem (Route.Resources 10 Nothing)
         ]
         [ Dropdown "User Logo"
-            [ SubNavItem (Route.Preferences)
+            [ SubNavItem Route.Preferences
             ]
         ]
 
