@@ -11,12 +11,38 @@ import Html.Events exposing (..)
 
 type alias Model =
     { value : Int
+    , pageLoad : PageLoad
     }
 
 
 init : Maybe Int -> Maybe Int -> ( Model, Cmd Msg )
-init page size =
-    ( Model 10, Cmd.none )
+init maybePageNumber maybePageSize =
+    let
+        pageLoad =
+            toPageLoad maybePageNumber maybePageSize
+    in
+    ( Model 10 pageLoad, Cmd.none )
+
+
+type PageLoad
+    = Load Int Int
+    | Reload Int Int
+
+
+toPageLoad : Maybe Int -> Maybe Int -> PageLoad
+toPageLoad maybePageNumber maybePageSize =
+    case ( maybePageNumber, maybePageSize ) of
+        ( Just page, Just size ) ->
+            Load page size
+
+        ( Just page, Nothing ) ->
+            Reload page 10
+
+        ( Nothing, Just size ) ->
+            Reload 1 size
+
+        ( Nothing, Nothing ) ->
+            Reload 1 10
 
 
 

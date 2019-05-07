@@ -35,14 +35,23 @@ toLink route =
             "/preferences"
 
         Resources page size ->
-            "/resources/" ++ paramToSring "page" page String.fromInt ++ paramToSring "size" size String.fromInt
+            "/resources" ++ paramsToString [ paramToSring "page" page String.fromInt, paramToSring "size" size String.fromInt ]
+
+
+paramsToString : List String -> String
+paramsToString params =
+    "?"
+        ++ (params
+                |> List.filter (\part -> String.isEmpty part)
+                |> String.join "&"
+           )
 
 
 paramToSring : String -> Maybe a -> (a -> String) -> String
 paramToSring name maybeValue convert =
     case maybeValue of
         Just value ->
-            "?" ++ name ++ "=" ++ convert value
+            name ++ "=" ++ convert value
 
         Nothing ->
             ""
