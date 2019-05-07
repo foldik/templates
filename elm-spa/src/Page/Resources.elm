@@ -14,9 +14,9 @@ type alias Model =
     }
 
 
-init : Int -> ( Model, Cmd Msg )
-init initValue =
-    ( Model initValue, Cmd.none )
+init : Maybe Int -> Maybe Int -> ( Model, Cmd Msg )
+init page size =
+    ( Model 10, Cmd.none )
 
 
 

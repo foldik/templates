@@ -13,7 +13,7 @@ type Route
     | Login
     | Logout
     | Preferences
-    | Resources Int (Maybe Int)
+    | Resources (Maybe Int) (Maybe Int)
 
 
 toLink : Route -> String
@@ -34,13 +34,18 @@ toLink route =
         Preferences ->
             "/preferences"
 
-        Resources id maybePageNumber ->
-            case maybePageNumber of
-                Just pageNumber ->
-                    "/resources/" ++ String.fromInt id ++ "?page=" ++ String.fromInt pageNumber
+        Resources page size ->
+            "/resources/" ++ paramToSring "page" page String.fromInt ++ paramToSring "size" size String.fromInt
 
-                Nothing ->
-                    "/resources/" ++ String.fromInt id
+
+paramToSring : String -> Maybe a -> (a -> String) -> String
+paramToSring name maybeValue convert =
+    case maybeValue of
+        Just value ->
+            "?" ++ name ++ "=" ++ convert value
+
+        Nothing ->
+            ""
 
 
 toString : Route -> String
@@ -61,7 +66,7 @@ toString route =
         Preferences ->
             "Preferences"
 
-        Resources id maybePageNumber ->
+        Resources page size ->
             "Resources"
 
 
@@ -86,7 +91,7 @@ routeParser =
         , map Login (s "login")
         , map Logout (s "logout")
         , map Preferences (s "preferences")
-        , map Resources (s "resources" </> int <?> Query.int "page")
+        , map Resources (s "resources" <?> Query.int "page" <?> Query.int "size")
         ]
 
 

@@ -152,10 +152,10 @@ loadPage url maybeUser =
             in
             ( Preferences pageModel, Cmd.map PreferencesMsg pageMsg )
 
-        Route.Resources id maybePageNumber ->
+        Route.Resources page size ->
             let
                 ( pageModel, pageMsg ) =
-                    ResourcesPage.init id
+                    ResourcesPage.init page size
             in
             ( Resources pageModel, Cmd.map ResourcesMsg pageMsg )
 

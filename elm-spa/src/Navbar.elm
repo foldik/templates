@@ -38,7 +38,7 @@ type SubNavItem
 menu : NavConfig
 menu =
     NavConfig
-        [ NavItem (Route.Resources 10 Nothing)
+        [ NavItem (Route.Resources Nothing Nothing)
         ]
         [ Dropdown "User Logo"
             [ SubNavItem Route.Preferences
