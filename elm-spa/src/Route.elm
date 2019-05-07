@@ -40,11 +40,17 @@ toLink route =
 
 paramsToString : List String -> String
 paramsToString params =
-    "?"
-        ++ (params
-                |> List.filter (\part -> String.isEmpty part)
+    let
+        parts =
+            params
+                |> List.filter (\part -> not (String.isEmpty part))
                 |> String.join "&"
-           )
+    in
+    if String.isEmpty parts then
+        ""
+
+    else
+        "?" ++ parts
 
 
 paramToSring : String -> Maybe a -> (a -> String) -> String
