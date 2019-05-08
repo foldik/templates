@@ -4,6 +4,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Model.Role as Role
+import Model.Session as Session
 import Model.User as User
 import Route
 
@@ -13,7 +14,7 @@ import Route
 
 
 type alias Model =
-    { user : Maybe User.User
+    { session : Session.Session
     , isOpen : Bool
     , config : NavConfig
     }
@@ -38,7 +39,7 @@ type SubNavItem
 menu : NavConfig
 menu =
     NavConfig
-        [ NavItem (Route.Resources Nothing Nothing)
+        [ NavItem (Route.Resources (Just 1) (Just 10))
         ]
         [ Dropdown "User Logo"
             [ SubNavItem Route.Preferences
@@ -48,32 +49,32 @@ menu =
         ]
 
 
-init : Maybe User.User -> Model
-init maybeUser =
+init : Session.Session -> Model
+init session =
     let
         navConfig =
             menu
     in
     Model
-        maybeUser
+        session
         False
         (NavConfig
-            (filterAuthorized maybeUser navConfig.start)
-            (filterAuthorized maybeUser navConfig.end)
+            (filterAuthorized session navConfig.start)
+            (filterAuthorized session navConfig.end)
         )
 
 
-filterAuthorized : Maybe User.User -> List NavItem -> List NavItem
-filterAuthorized maybeUser navItems =
+filterAuthorized : Session.Session -> List NavItem -> List NavItem
+filterAuthorized session navItems =
     navItems
         |> List.filter
             (\navItem ->
                 case navItem of
                     NavItem route ->
-                        Route.authorized route maybeUser
+                        Route.authorized route session
 
                     Button route ->
-                        Route.authorized route maybeUser
+                        Route.authorized route session
 
                     _ ->
                         True
@@ -82,7 +83,7 @@ filterAuthorized maybeUser navItems =
             (\navItem ->
                 case navItem of
                     Dropdown name subNavItems ->
-                        Dropdown name (List.filter (\(SubNavItem route) -> Route.authorized route maybeUser) subNavItems)
+                        Dropdown name (List.filter (\(SubNavItem route) -> Route.authorized route session) subNavItems)
 
                     _ ->
                         navItem

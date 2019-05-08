@@ -1,6 +1,7 @@
 module Route exposing (Route(..), authorized, router, toLink, toString)
 
 import Model.Role as Role
+import Model.Session as Session
 import Model.User as User
 import Url
 import Url.Parser exposing ((</>), (<?>), Parser, int, map, oneOf, parse, s, string, top)
@@ -85,13 +86,13 @@ toString route =
             "Resources"
 
 
-router : Url.Url -> Maybe User.User -> Route
-router url maybeUser =
+router : Session.Session -> Route
+router session =
     let
         route =
-            Maybe.withDefault NotFound (parse routeParser url)
+            Maybe.withDefault NotFound (parse routeParser session.url)
     in
-    case authorized route maybeUser of
+    case authorized route session of
         True ->
             route
 
@@ -110,68 +111,32 @@ routeParser =
         ]
 
 
-authorized : Route -> Maybe User.User -> Bool
-authorized route maybeUser =
+authorized : Route -> Session.Session -> Bool
+authorized route session =
     let
-        authPredicate =
+        authRule =
             authConfig route
     in
-    authPredicate maybeUser
+    authRule session
 
 
-authConfig : Route -> (Maybe User.User -> Bool)
+authConfig : Route -> (Session.Session -> Bool)
 authConfig route =
     case route of
         Home ->
-            hasAnyRole [ Role.Admin, Role.SimpleUser ]
+            Session.hasAnyRole [ Role.Admin, Role.SimpleUser ]
 
         Login ->
-            notAuthenticated
+            Session.notAuthenticated
 
         Logout ->
-            authenticated
+            Session.authenticated
 
         Preferences ->
-            authenticated
+            Session.authenticated
 
         Resources id maybePageNumber ->
-            hasAnyRole [ Role.Admin ]
+            Session.hasAnyRole [ Role.Admin ]
 
         _ ->
-            allow
-
-
-hasAnyRole : List Role.Role -> (Maybe User.User -> Bool)
-hasAnyRole allowedRoles =
-    \maybeUser ->
-        case maybeUser of
-            Nothing ->
-                False
-
-            Just user ->
-                List.member (User.getRole user) allowedRoles
-
-
-authenticated : Maybe User.User -> Bool
-authenticated maybeUser =
-    case maybeUser of
-        Just _ ->
-            True
-
-        Nothing ->
-            False
-
-
-notAuthenticated : Maybe User.User -> Bool
-notAuthenticated maybeUser =
-    case maybeUser of
-        Just _ ->
-            False
-
-        Nothing ->
-            True
-
-
-allow : Maybe User.User -> Bool
-allow maybeUser =
-    True
+            Session.allow

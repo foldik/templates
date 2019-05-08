@@ -82,4 +82,4 @@ update msg model =
 view : Model -> Html Msg
 view model =
     h1 [ class "title is-1" ]
-        [ text "Page " ]
+        [ text "Resources" ]

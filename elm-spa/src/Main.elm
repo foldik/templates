@@ -62,7 +62,7 @@ init flags url key =
         session =
             Session.Session Nothing url key
     in
-    ( Model session (Navbar.init Nothing) Loading, Command.send (InitApp Dummy.user) )
+    ( Model session (Navbar.init session) Loading, Command.send (InitApp Dummy.user) )
 
 
 
@@ -92,7 +92,7 @@ update msg model =
                 navigationCommand =
                     navigateTo session
             in
-            ( { model | session = session, navbar = Navbar.init maybeUser }, navigationCommand )
+            ( { model | session = session, navbar = Navbar.init session }, navigationCommand )
 
         ( LinkClicked urlRequest, _ ) ->
             case urlRequest of
@@ -149,7 +149,7 @@ navigateTo session =
 
 loadPage : Session.Session -> ( Page, Cmd Msg )
 loadPage session =
-    case Route.router session.url session.maybeUser of
+    case Route.router session of
         Route.NotFound ->
             ( NotFound, Cmd.none )
 
