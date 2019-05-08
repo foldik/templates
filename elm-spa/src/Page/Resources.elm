@@ -81,5 +81,18 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    h1 [ class "title is-1" ]
-        [ text "Resources" ]
+    div []
+        [ h1 [ class "title is-1" ]
+            [ text "Resources" ]
+        , div [ class "modal is-active" ]
+            [ div [ class "modal-background" ] []
+            , div [ class "modal-card" ] 
+                [ header [ class "modal-card-head" ] 
+                    [ p [ class "modal-card-title" ] 
+                        [ text "New resource" ] 
+                    ]
+                , section [ class "modal-card-body" ] 
+                    []
+                ]
+            ]
+        ]
