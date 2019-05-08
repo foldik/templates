@@ -1,8 +1,11 @@
 module Page.Resources exposing (Model, Msg, init, update, view)
 
+import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Model.Session as Session
+import Route
 
 
 
@@ -10,18 +13,30 @@ import Html.Events exposing (..)
 
 
 type alias Model =
-    { value : Int
+    { session : Session.Session
     , pageLoad : PageLoad
     }
 
 
-init : Maybe Int -> Maybe Int -> ( Model, Cmd Msg )
-init maybePageNumber maybePageSize =
+init : Session.Session -> Maybe Int -> Maybe Int -> ( Model, Cmd Msg )
+init session maybePageNumber maybePageSize =
     let
         pageLoad =
             toPageLoad maybePageNumber maybePageSize
     in
-    ( Model 10 pageLoad, Cmd.none )
+    case pageLoad of
+        Load page size ->
+            ( Model session pageLoad, Cmd.none )
+
+        Reload page size ->
+            let
+                path =
+                    Route.toLink (Route.Resources (Just page) (Just size))
+
+                cmd =
+                    Nav.pushUrl session.key path
+            in
+            ( Model session pageLoad, cmd )
 
 
 type PageLoad
@@ -57,7 +72,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Increase ->
-            ( { model | value = model.value + 1 }, Cmd.none )
+            ( model, Cmd.none )
 
 
 
@@ -67,4 +82,4 @@ update msg model =
 view : Model -> Html Msg
 view model =
     h1 [ class "title is-1" ]
-        [ text ("Page " ++ String.fromInt model.value) ]
+        [ text "Page " ]
