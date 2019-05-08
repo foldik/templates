@@ -1,8 +1,8 @@
 ######################## Build
-FROM node:12-alpine as build
+FROM node:11-alpine as build
 
 ## Cache
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY elm.json .
 RUN npm install
 COPY src/placeholder src/Main.elm
