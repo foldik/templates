@@ -1,9 +1,11 @@
 module Page.Resources exposing (Model, Msg, init, update, view)
 
+import Api.Resources as ResourceApi
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Http
 import Model.Session as Session
 import Route
 
@@ -14,25 +16,16 @@ import Route
 
 type alias Model =
     { session : Session.Session
+    , notification : Maybe (Result String String)
     , newResourceForm : NewResourceForm
+    , resources : List ResourceApi.Resource
     }
 
 
 type alias NewResourceForm =
     { isActive : Bool
+    , resourceName : String
     }
-
-
-
-{-
-   Data -> Data
-   Data -> ValidatedData
--}
-
-
-type FormValue a
-    = Valid a
-    | Invalid String a
 
 
 init : Session.Session -> Maybe Int -> Maybe Int -> ( Model, Cmd Msg )
@@ -43,7 +36,7 @@ init session maybePageNumber maybePageSize =
     in
     case pageLoad of
         Load page size ->
-            ( Model session (NewResourceForm False), Cmd.none )
+            ( initModel session, ResourceApi.getResources GotResources )
 
         Reload page size ->
             let
@@ -53,7 +46,17 @@ init session maybePageNumber maybePageSize =
                 cmd =
                     Nav.pushUrl session.key path
             in
-            ( Model session (NewResourceForm False), cmd )
+            ( initModel session, cmd )
+
+
+initModel : Session.Session -> Model
+initModel session =
+    Model session Nothing initFormData []
+
+
+initFormData : NewResourceForm
+initFormData =
+    NewResourceForm False ""
 
 
 type PageLoad
@@ -82,33 +85,67 @@ toPageLoad maybePageNumber maybePageSize =
 
 
 type Msg
-    = NewResourceFormMsg FormMsg
+    = CloseNotification
+    | CreateResourceFormMsg FormMsg
+    | GotResources (Result Http.Error (List ResourceApi.Resource))
 
 
 type FormMsg
-    = OpenNewResourceForm
-    | CloseNewResourceForm
+    = Open
+    | Close
+    | UpdateResourceName String
+    | CreateResource
+    | CreatedResurce (Result Http.Error ResourceApi.Resource)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NewResourceFormMsg formMsg ->
+        CloseNotification ->
+            ( { model | notification = Nothing }, Cmd.none )
+
+        CreateResourceFormMsg formMsg ->
             let
-                ( newResourceForm, command ) =
-                    updateNewResourceForm formMsg model.newResourceForm
+                ( newResourceForm, notification, command ) =
+                    updateCreateForm formMsg model.newResourceForm
             in
-            ( { model | newResourceForm = newResourceForm }, command )
+            ( { model | newResourceForm = newResourceForm, notification = notification }, Cmd.map CreateResourceFormMsg command )
+
+        GotResources result ->
+            case result of
+                Ok resources ->
+                    ( { model | resources = resources }, Cmd.none )
+
+                Err _ ->
+                    ( { model | notification = Just (Err "Couldn't get resources") }, Cmd.none )
 
 
-updateNewResourceForm : FormMsg -> NewResourceForm -> ( NewResourceForm, Cmd Msg )
-updateNewResourceForm msg newResourceForm =
+updateCreateForm : FormMsg -> NewResourceForm -> ( NewResourceForm, Maybe (Result String String), Cmd FormMsg )
+updateCreateForm msg newResourceForm =
     case msg of
-        OpenNewResourceForm ->
-            ( { newResourceForm | isActive = True }, Cmd.none )
+        Open ->
+            ( { newResourceForm | isActive = True }, Nothing, Cmd.none )
 
-        CloseNewResourceForm ->
-            ( { newResourceForm | isActive = False }, Cmd.none )
+        Close ->
+            ( initFormData, Nothing, Cmd.none )
+
+        UpdateResourceName value ->
+            ( { newResourceForm | resourceName = value }, Nothing, Cmd.none )
+
+        CreateResource ->
+            let
+                newResource =
+                    ResourceApi.NewResource newResourceForm.resourceName
+            in
+            ( newResourceForm, Nothing, ResourceApi.createResource CreatedResurce newResource )
+
+        CreatedResurce result ->
+            case result of
+                Ok resource ->
+                    ( initFormData, Just (Ok "Succesfully saved resource"), Cmd.none )
+
+                Err _ ->
+                    ( { newResourceForm | isActive = False }, Just (Err "Error happened during saving resource"), Cmd.none )
 
 
 
@@ -118,14 +155,39 @@ updateNewResourceForm msg newResourceForm =
 view : Model -> Html Msg
 view model =
     div []
-        [ h1 [ class "title is-1" ]
+        [ notificationView model.notification
+        , h1 [ class "title is-1" ]
             [ text "Resources" ]
-        , div []
-            [ button [ class "button is-primary is-pulled-right", onClick (NewResourceFormMsg OpenNewResourceForm) ]
-                [ text "New" ]
+        , div [ class "columns" ]
+            [ div [ class "column" ]
+                [ button [ class "button is-primary is-pulled-right", onClick (CreateResourceFormMsg Open) ]
+                    [ text "New" ]
+                ]
             ]
-        , Html.map NewResourceFormMsg (newResourceModal model.newResourceForm)
+        , Html.map CreateResourceFormMsg (newResourceModal model.newResourceForm)
+        , resourcesView model.resources
         ]
+
+
+notificationView : Maybe (Result String String) -> Html Msg
+notificationView notification =
+    case notification of
+        Just result ->
+            case result of
+                Ok value ->
+                    div [ class "notification is-success" ]
+                        [ button [ class "delete", onClick CloseNotification ] []
+                        , text value
+                        ]
+
+                Err err ->
+                    div [ class "notification is-danger" ]
+                        [ button [ class "delete", onClick CloseNotification ] []
+                        , text err
+                        ]
+
+        Nothing ->
+            div [] []
 
 
 newResourceModal : NewResourceForm -> Html FormMsg
@@ -136,7 +198,7 @@ newResourceModal newResourceForm =
             [ header [ class "modal-card-head" ]
                 [ p [ class "modal-card-title" ]
                     [ text "New resource" ]
-                , button [ class "delete", attribute "aria-label" "close", onClick CloseNewResourceForm ]
+                , button [ class "delete", attribute "aria-label" "close", onClick Close ]
                     []
                 ]
             , section [ class "modal-card-body" ]
@@ -144,16 +206,32 @@ newResourceModal newResourceForm =
                     [ label [ class "label" ]
                         [ text "Name" ]
                     , div [ class "control" ]
-                        [ input [ class "input", type_ "text", placeholder "Name of the resource" ]
+                        [ input [ class "input", type_ "text", placeholder "Name of the resource", value newResourceForm.resourceName, onInput UpdateResourceName ]
                             []
                         ]
                     ]
                 ]
             , footer [ class "modal-card-foot" ]
-                [ button [ class "button is-primary", onClick CloseNewResourceForm ]
+                [ button [ class "button is-primary", onClick CreateResource ]
                     [ text "Save" ]
-                , button [ class "button", onClick CloseNewResourceForm ]
+                , button [ class "button", onClick Close ]
                     [ text "Cancel" ]
                 ]
             ]
         ]
+
+
+resourcesView : List ResourceApi.Resource -> Html Msg
+resourcesView resources =
+    div []
+        (List.map
+            (\resource ->
+                div [ class "card" ]
+                    [ div [ class "card-header" ]
+                        [ div [ class "card-header-title" ]
+                            [ text resource.name ]
+                        ]
+                    ]
+            )
+            resources
+        )

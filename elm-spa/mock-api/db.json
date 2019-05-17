@@ -1,11 +1,17 @@
 {
-    "users": [
-        {
-            "id": 1,
-            "username": "foldik",
-            "first_name": "Kristof",
-            "last_name": "Földi",
-            "role": "Admin"
-        }
-    ]
+  "users": [
+    {
+      "id": 1,
+      "username": "foldik",
+      "first_name": "Kristof",
+      "last_name": "Földi",
+      "role": "Admin"
+    }
+  ],
+  "resources": [
+    {
+      "id": 1,
+      "name": "Resource 1"
+    }
+  ]
 }
