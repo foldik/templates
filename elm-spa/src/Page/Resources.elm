@@ -16,7 +16,7 @@ import Route
 
 type alias Model =
     { session : Session.Session
-    , notification : Maybe (Result String String)
+    , notification : Notification
     , newResourceForm : NewResourceForm
     , resources : List ResourceApi.Resource
     }
@@ -26,6 +26,12 @@ type alias NewResourceForm =
     { isActive : Bool
     , resourceName : String
     }
+
+
+type Notification
+    = Success String Bool
+    | Error String Bool
+    | Empty
 
 
 init : Session.Session -> Maybe Int -> Maybe Int -> ( Model, Cmd Msg )
@@ -51,7 +57,7 @@ init session maybePageNumber maybePageSize =
 
 initModel : Session.Session -> Model
 initModel session =
-    Model session Nothing initFormData []
+    Model session Empty initFormData []
 
 
 initFormData : NewResourceForm
@@ -102,14 +108,30 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         CloseNotification ->
-            ( { model | notification = Nothing }, Cmd.none )
+            ( { model | notification = Empty }, Cmd.none )
 
         CreateResourceFormMsg formMsg ->
             let
                 ( newResourceForm, notification, command ) =
                     updateCreateForm formMsg model.newResourceForm
             in
-            ( { model | newResourceForm = newResourceForm, notification = notification }, Cmd.map CreateResourceFormMsg command )
+            case notification of
+                Success message isReload ->
+                    if isReload then
+                        ( { model | newResourceForm = newResourceForm, notification = notification }, ResourceApi.getResources GotResources )
+
+                    else
+                        ( { model | newResourceForm = newResourceForm, notification = notification }, Cmd.none )
+
+                Error message isReload ->
+                    if isReload then
+                        ( { model | newResourceForm = newResourceForm, notification = notification }, ResourceApi.getResources GotResources )
+
+                    else
+                        ( { model | newResourceForm = newResourceForm, notification = notification }, Cmd.none )
+
+                _ ->
+                    ( { model | newResourceForm = newResourceForm, notification = notification }, Cmd.map CreateResourceFormMsg command )
 
         GotResources result ->
             case result of
@@ -117,35 +139,35 @@ update msg model =
                     ( { model | resources = resources }, Cmd.none )
 
                 Err _ ->
-                    ( { model | notification = Just (Err "Couldn't get resources") }, Cmd.none )
+                    ( { model | notification = Error "Couldn't get resources" False }, Cmd.none )
 
 
-updateCreateForm : FormMsg -> NewResourceForm -> ( NewResourceForm, Maybe (Result String String), Cmd FormMsg )
+updateCreateForm : FormMsg -> NewResourceForm -> ( NewResourceForm, Notification, Cmd FormMsg )
 updateCreateForm msg newResourceForm =
     case msg of
         Open ->
-            ( { newResourceForm | isActive = True }, Nothing, Cmd.none )
+            ( { newResourceForm | isActive = True }, Empty, Cmd.none )
 
         Close ->
-            ( initFormData, Nothing, Cmd.none )
+            ( initFormData, Empty, Cmd.none )
 
         UpdateResourceName value ->
-            ( { newResourceForm | resourceName = value }, Nothing, Cmd.none )
+            ( { newResourceForm | resourceName = value }, Empty, Cmd.none )
 
         CreateResource ->
             let
                 newResource =
                     ResourceApi.NewResource newResourceForm.resourceName
             in
-            ( newResourceForm, Nothing, ResourceApi.createResource CreatedResurce newResource )
+            ( newResourceForm, Empty, ResourceApi.createResource CreatedResurce newResource )
 
         CreatedResurce result ->
             case result of
                 Ok resource ->
-                    ( initFormData, Just (Ok "Succesfully saved resource"), Cmd.none )
+                    ( initFormData, Success "Succesfully saved resource" True, Cmd.none )
 
                 Err _ ->
-                    ( { newResourceForm | isActive = False }, Just (Err "Error happened during saving resource"), Cmd.none )
+                    ( { newResourceForm | isActive = False }, Error "Error happened during saving resource" True, Cmd.none )
 
 
 
@@ -169,24 +191,22 @@ view model =
         ]
 
 
-notificationView : Maybe (Result String String) -> Html Msg
+notificationView : Notification -> Html Msg
 notificationView notification =
     case notification of
-        Just result ->
-            case result of
-                Ok value ->
-                    div [ class "notification is-success" ]
-                        [ button [ class "delete", onClick CloseNotification ] []
-                        , text value
-                        ]
+        Success message _ ->
+            div [ class "notification is-success" ]
+                [ button [ class "delete", onClick CloseNotification ] []
+                , text message
+                ]
 
-                Err err ->
-                    div [ class "notification is-danger" ]
-                        [ button [ class "delete", onClick CloseNotification ] []
-                        , text err
-                        ]
+        Error message _ ->
+            div [ class "notification is-danger" ]
+                [ button [ class "delete", onClick CloseNotification ] []
+                , text message
+                ]
 
-        Nothing ->
+        Empty ->
             div [] []
 
 
