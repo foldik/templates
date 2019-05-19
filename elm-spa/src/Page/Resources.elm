@@ -1,7 +1,9 @@
 module Page.Resources exposing (Model, Msg, init, update, view)
 
 import Api.Resources as ResourceApi
+import Array
 import Browser.Navigation as Nav
+import Components.CardTable as CardTable
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -128,16 +130,30 @@ view : Model -> Html Msg
 view model =
     div []
         [ notificationView model.notification
-        , h1 [ class "title is-1" ]
-            [ text "Resources" ]
-        , div [ class "columns" ]
-            [ div [ class "column" ]
-                [ button [ class "button is-primary is-pulled-right", onClick (CreateResourceFormMsg NewResourceModal.Open) ]
+        , div [ ] 
+            [ h1 [ class "title is-1" ]
+                [ text "Resources" ]
+            ]
+        , div [ class "columns has-padding-bottom-20" ]
+            [ div [ class "column" ] 
+                [ button [ class "button is-link is-pulled-right", onClick (CreateResourceFormMsg NewResourceModal.Open) ]
                     [ text "New" ]
                 ]
             ]
         , Html.map CreateResourceFormMsg (NewResourceModal.view model.newResourceForm)
-        , resourcesTable model.resources
+        , div [ ] [ CardTable.view 4 model.resources resourceCardView ]
+        ]
+
+
+resourceCardView : ResourceApi.Resource -> Html Msg
+resourceCardView resource =
+    div [ class "card" ]
+        [ div [ class "card-header" ]
+            [ div [ class "card-header-title" ]
+                [ h1 [ class "title" ]
+                    [ text resource.name ]
+                ]
+            ]
         ]
 
 
@@ -158,31 +174,3 @@ notificationView notification =
 
         Notification.Empty ->
             div [] []
-
-
-resourcesTable : List ResourceApi.Resource -> Html Msg
-resourcesTable resources =
-    let
-        splittedResources =
-            Utils.Lists.split resources 3
-    in
-    div []
-        (List.map
-            (\resourceRow ->
-                div [ class "columns" ]
-                    (List.map
-                        (\resourceColumn ->
-                            div [ class "column" ]
-                                [ div [ class "card" ]
-                                    [ div [ class "card-header" ]
-                                        [ div [ class "card-header-title" ]
-                                            [ text resourceColumn.name ]
-                                        ]
-                                    ]
-                                ]
-                        )
-                        resourceRow
-                    )
-            )
-            splittedResources
-        )

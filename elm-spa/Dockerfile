@@ -13,6 +13,7 @@ COPY . ./
 
 RUN npm run build
 RUN npm run uglifyjs
+RUN npm run build-style
 
 ######################## Final
 FROM nginx:1.16-alpine
