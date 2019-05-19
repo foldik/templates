@@ -60,7 +60,7 @@ update msg model =
                     ( init, Notification.Success "Succesfully saved resource" True, Cmd.none )
 
                 Err _ ->
-                    ( { model | isActive = False }, Notification.Error "Error happened during saving resource" True, Cmd.none )
+                    ( { model | isActive = False }, Notification.Error "Error happened during saving resource" False, Cmd.none )
 
 
 

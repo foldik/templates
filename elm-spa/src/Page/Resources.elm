@@ -10,6 +10,7 @@ import Model.Notification as Notification
 import Model.Session as Session
 import Page.NewResourceModal as NewResourceModal
 import Route
+import Utils.Lists
 
 
 
@@ -136,7 +137,7 @@ view model =
                 ]
             ]
         , Html.map CreateResourceFormMsg (NewResourceModal.view model.newResourceForm)
-        , resourcesView model.resources
+        , resourcesTable model.resources
         ]
 
 
@@ -159,17 +160,29 @@ notificationView notification =
             div [] []
 
 
-resourcesView : List ResourceApi.Resource -> Html Msg
-resourcesView resources =
+resourcesTable : List ResourceApi.Resource -> Html Msg
+resourcesTable resources =
+    let
+        splittedResources =
+            Utils.Lists.split resources 3
+    in
     div []
         (List.map
-            (\resource ->
-                div [ class "card" ]
-                    [ div [ class "card-header" ]
-                        [ div [ class "card-header-title" ]
-                            [ text resource.name ]
-                        ]
-                    ]
+            (\resourceRow ->
+                div [ class "columns" ]
+                    (List.map
+                        (\resourceColumn ->
+                            div [ class "column" ]
+                                [ div [ class "card" ]
+                                    [ div [ class "card-header" ]
+                                        [ div [ class "card-header-title" ]
+                                            [ text resourceColumn.name ]
+                                        ]
+                                    ]
+                                ]
+                        )
+                        resourceRow
+                    )
             )
-            resources
+            splittedResources
         )
