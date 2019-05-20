@@ -5,6 +5,7 @@ import Array
 import Browser.Navigation as Nav
 import Components.CardTable as CardTable
 import Components.Notification as Notification
+import Components.Pagination as Pagination
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -79,7 +80,8 @@ toPageLoad maybePageNumber maybePageSize =
 
 
 type Msg
-    = CloseNotification
+    = NoOp ()
+    | CloseNotification
     | CreateResourceFormMsg NewResourceModal.Msg
     | GotResources (Result Http.Error (List ResourceApi.Resource))
 
@@ -87,6 +89,9 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp _ ->
+            ( model, Cmd.none )
+
         CloseNotification ->
             ( { model | notification = Notification.Empty }, Cmd.none )
 
@@ -125,7 +130,9 @@ view model =
                 ]
             ]
         , Html.map CreateResourceFormMsg (NewResourceModal.view model.newResourceModal)
+        , Pagination.view (Pagination.Pagination 10 10 40) |> Html.map NoOp
         , div [] [ CardTable.view 4 model.resources resourceCardView ]
+        , Pagination.view (Pagination.Pagination 10 10 40) |> Html.map NoOp
         ]
 
 
