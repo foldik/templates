@@ -1,4 +1,4 @@
-module Api.Resources exposing (NewResource, Resource, createResource, getResources)
+module Api.Resources exposing (NewResource, Resource, createResource, getResource, getResources)
 
 import Http
 import Json.Decode exposing (Decoder, andThen, fail, field, int, list, map2, map4, string, succeed)
@@ -51,4 +51,12 @@ getResources msg =
     Http.get
         { url = "/api/resources"
         , expect = Http.expectJson msg (list resourceDecoder)
+        }
+
+
+getResource : Int -> (Result Http.Error Resource -> msg) -> Cmd msg
+getResource id msg =
+    Http.get
+        { url = "/api/resources/" ++ String.fromInt id
+        , expect = Http.expectJson msg resourceDecoder
         }

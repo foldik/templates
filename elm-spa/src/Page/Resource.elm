@@ -7,6 +7,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Model.Session as Session
+import Page.NotFound as NotFoundPage
 import Url
 
 
@@ -28,7 +29,7 @@ type Loadable
 
 init : Session.Session -> Int -> ( Model, Cmd Msg )
 init session id =
-    ( Model session (Loading id), Cmd.none )
+    ( Model session (Loading id), ResourceApi.getResource id GotResourceResponse )
 
 
 
@@ -36,14 +37,23 @@ init session id =
 
 
 type Msg
-    = NoOp
+    = NoOp ()
+    | GotResourceResponse (Result Http.Error ResourceApi.Resource)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NoOp ->
+        NoOp _ ->
             ( model, Cmd.none )
+
+        GotResourceResponse result ->
+            case result of
+                Ok resource ->
+                    ( { model | resource = Loaded resource }, Cmd.none )
+
+                Err _ ->
+                    ( { model | resource = NotFound }, Cmd.none )
 
 
 
@@ -52,5 +62,13 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    h1 [ class "title is-1" ]
-        [ text "One resource" ]
+    case model.resource of
+        Loading id ->
+            div [] [ text "Loading" ]
+
+        NotFound ->
+            Html.map NoOp NotFoundPage.view
+
+        Loaded resource ->
+            h1 [ class "title is-1" ]
+                [ text resource.name ]

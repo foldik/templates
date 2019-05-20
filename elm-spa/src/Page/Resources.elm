@@ -150,11 +150,13 @@ notificationView notification =
 
 resourceCardView : ResourceApi.Resource -> Html Msg
 resourceCardView resource =
-    div [ class "card" ]
-        [ div [ class "card-header" ]
-            [ div [ class "card-header-title" ]
-                [ h1 [ class "title" ]
-                    [ text resource.name ]
+    a [ href (Route.toLink (Route.Resource resource.id)) ]
+        [ div [ class "card" ]
+            [ div [ class "card-header" ]
+                [ div [ class "card-header-title" ]
+                    [ h1 [ class "title" ]
+                        [ text resource.name ]
+                    ]
                 ]
             ]
         ]
