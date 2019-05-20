@@ -17,6 +17,7 @@ import Page.Login as LoginPage
 import Page.Logout as LogoutPage
 import Page.NotFound as NotFoundPage
 import Page.Preferences as PreferencesPage
+import Page.Resource as ResourcePage
 import Page.Resources as ResourcesPage
 import Route
 import Task
@@ -54,6 +55,7 @@ type Page
     | Logout
     | Preferences PreferencesPage.Model
     | Resources ResourcesPage.Model
+    | Resource ResourcePage.Model
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -79,6 +81,7 @@ type Msg
     | HomeMsg HomePage.Msg
     | PreferencesMsg PreferencesPage.Msg
     | ResourcesMsg ResourcesPage.Msg
+    | ResourceMsg ResourcePage.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -138,6 +141,9 @@ update msg model =
         ( ResourcesMsg pageMsg, Resources pageModel ) ->
             updatePage Resources pageModel ResourcesMsg pageMsg ResourcesPage.update model
 
+        ( ResourceMsg pageMsg, Resource pageModel ) ->
+            updatePage Resource pageModel ResourceMsg pageMsg ResourcePage.update model
+
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -183,6 +189,13 @@ loadPage session =
                     ResourcesPage.init session page size
             in
             ( Resources pageModel, Cmd.map ResourcesMsg pageMsg )
+
+        Route.Resource id ->
+            let
+                ( pageModel, pageMsg ) =
+                    ResourcePage.init session id
+            in
+            ( Resource pageModel, Cmd.map ResourceMsg pageMsg )
 
 
 updatePage : (p -> Page) -> p -> (a -> Msg) -> a -> (a -> p -> ( p, Cmd a )) -> Model -> ( Model, Cmd Msg )
@@ -242,6 +255,10 @@ pageView model =
         Resources pageModel ->
             ResourcesPage.view pageModel
                 |> Html.map ResourcesMsg
+
+        Resource pageModel ->
+            ResourcePage.view pageModel
+                |> Html.map ResourceMsg
 
 
 

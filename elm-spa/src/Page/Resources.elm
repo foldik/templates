@@ -4,11 +4,11 @@ import Api.Resources as ResourceApi
 import Array
 import Browser.Navigation as Nav
 import Components.CardTable as CardTable
+import Components.Notification as Notification
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Model.Notification as Notification
 import Model.Session as Session
 import Page.NewResourceModal as NewResourceModal
 import Route
@@ -22,7 +22,7 @@ import Utils.Lists
 type alias Model =
     { session : Session.Session
     , notification : Notification.Notification
-    , newResourceForm : NewResourceModal.Model
+    , newResourceModal : NewResourceModal.Model
     , resources : List ResourceApi.Resource
     }
 
@@ -50,7 +50,7 @@ init session maybePageNumber maybePageSize =
 
 initModel : Session.Session -> Model
 initModel session =
-    Model session Notification.Empty NewResourceModal.init []
+    Model session Notification.Empty (NewResourceModal.init session) []
 
 
 type PageLoad
@@ -92,26 +92,10 @@ update msg model =
 
         CreateResourceFormMsg formMsg ->
             let
-                ( newResourceForm, notification, command ) =
-                    NewResourceModal.update formMsg model.newResourceForm
+                ( newResourceModal, command ) =
+                    NewResourceModal.update formMsg model.newResourceModal
             in
-            case notification of
-                Notification.Success message isReload ->
-                    if isReload then
-                        ( { model | newResourceForm = newResourceForm, notification = notification }, ResourceApi.getResources GotResources )
-
-                    else
-                        ( { model | newResourceForm = newResourceForm, notification = notification }, Cmd.none )
-
-                Notification.Error message isReload ->
-                    if isReload then
-                        ( { model | newResourceForm = newResourceForm, notification = notification }, ResourceApi.getResources GotResources )
-
-                    else
-                        ( { model | newResourceForm = newResourceForm, notification = notification }, Cmd.none )
-
-                _ ->
-                    ( { model | newResourceForm = newResourceForm, notification = notification }, Cmd.map CreateResourceFormMsg command )
+            ( { model | newResourceModal = newResourceModal }, Cmd.map CreateResourceFormMsg command )
 
         GotResources result ->
             case result of
@@ -130,30 +114,18 @@ view : Model -> Html Msg
 view model =
     div []
         [ notificationView model.notification
-        , div [ ] 
+        , div []
             [ h1 [ class "title is-1" ]
                 [ text "Resources" ]
             ]
         , div [ class "columns has-padding-bottom-20" ]
-            [ div [ class "column" ] 
+            [ div [ class "column" ]
                 [ button [ class "button is-link is-pulled-right", onClick (CreateResourceFormMsg NewResourceModal.Open) ]
                     [ text "New" ]
                 ]
             ]
-        , Html.map CreateResourceFormMsg (NewResourceModal.view model.newResourceForm)
-        , div [ ] [ CardTable.view 4 model.resources resourceCardView ]
-        ]
-
-
-resourceCardView : ResourceApi.Resource -> Html Msg
-resourceCardView resource =
-    div [ class "card" ]
-        [ div [ class "card-header" ]
-            [ div [ class "card-header-title" ]
-                [ h1 [ class "title" ]
-                    [ text resource.name ]
-                ]
-            ]
+        , Html.map CreateResourceFormMsg (NewResourceModal.view model.newResourceModal)
+        , div [] [ CardTable.view 4 model.resources resourceCardView ]
         ]
 
 
@@ -174,3 +146,15 @@ notificationView notification =
 
         Notification.Empty ->
             div [] []
+
+
+resourceCardView : ResourceApi.Resource -> Html Msg
+resourceCardView resource =
+    div [ class "card" ]
+        [ div [ class "card-header" ]
+            [ div [ class "card-header-title" ]
+                [ h1 [ class "title" ]
+                    [ text resource.name ]
+                ]
+            ]
+        ]

@@ -1,11 +1,13 @@
 module Page.NewResourceModal exposing (Model, Msg(..), init, update, view)
 
 import Api.Resources as ResourceApi
+import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Model.Notification as Notification
+import Model.Session as Session
+import Url
 
 
 
@@ -13,14 +15,15 @@ import Model.Notification as Notification
 
 
 type alias Model =
-    { isActive : Bool
+    { session : Session.Session
+    , isActive : Bool
     , resourceName : String
     }
 
 
-init : Model
-init =
-    Model False ""
+init : Session.Session -> Model
+init session =
+    Model session False ""
 
 
 
@@ -35,32 +38,32 @@ type Msg
     | CreatedResurce (Result Http.Error ResourceApi.Resource)
 
 
-update : Msg -> Model -> ( Model, Notification.Notification, Cmd Msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Open ->
-            ( { model | isActive = True }, Notification.Empty, Cmd.none )
+            ( { model | isActive = True }, Cmd.none )
 
         Close ->
-            ( init, Notification.Empty, Cmd.none )
+            ( init model.session, Cmd.none )
 
         UpdateResourceName value ->
-            ( { model | resourceName = value }, Notification.Empty, Cmd.none )
+            ( { model | resourceName = value }, Cmd.none )
 
         CreateResource ->
             let
                 newResource =
                     ResourceApi.NewResource model.resourceName
             in
-            ( model, Notification.Empty, ResourceApi.createResource CreatedResurce newResource )
+            ( model, ResourceApi.createResource CreatedResurce newResource )
 
         CreatedResurce result ->
             case result of
                 Ok resource ->
-                    ( init, Notification.Success "Succesfully saved resource" True, Cmd.none )
+                    ( init model.session, Nav.pushUrl model.session.key ("/resources/" ++ String.fromInt resource.id) )
 
                 Err _ ->
-                    ( { model | isActive = False }, Notification.Error "Error happened during saving resource" False, Cmd.none )
+                    ( { model | isActive = False }, Cmd.none )
 
 
 

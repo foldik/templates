@@ -1,4 +1,4 @@
-module Model.Notification exposing (Notification(..))
+module Components.Notification exposing (Notification(..))
 
 
 type Notification

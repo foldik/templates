@@ -15,6 +15,7 @@ type Route
     | Logout
     | Preferences
     | Resources (Maybe Int) (Maybe Int)
+    | Resource Int
 
 
 toLink : Route -> String
@@ -37,6 +38,9 @@ toLink route =
 
         Resources page size ->
             "/resources" ++ paramsToString [ paramToSring "page" page String.fromInt, paramToSring "size" size String.fromInt ]
+
+        Resource id ->
+            "/resources/" ++ String.fromInt id
 
 
 paramsToString : List String -> String
@@ -85,6 +89,9 @@ toString route =
         Resources page size ->
             "Resources"
 
+        Resource id ->
+            "Resource " ++ String.fromInt id
+
 
 router : Session.Session -> Route
 router session =
@@ -107,6 +114,7 @@ routeParser =
         , map Login (s "login")
         , map Logout (s "logout")
         , map Preferences (s "preferences")
+        , map Resource (s "resources" </> int)
         , map Resources (s "resources" <?> Query.int "page" <?> Query.int "size")
         ]
 
@@ -135,7 +143,10 @@ authConfig route =
         Preferences ->
             Session.authenticated
 
-        Resources id maybePageNumber ->
+        Resources maybePageNumber maybePageSize ->
+            Session.hasAnyRole [ Role.Admin ]
+
+        Resource id ->
             Session.hasAnyRole [ Role.Admin ]
 
         _ ->
