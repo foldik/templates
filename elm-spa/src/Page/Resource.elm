@@ -64,7 +64,8 @@ view : Model -> Html Msg
 view model =
     case model.resource of
         Loading id ->
-            div [] [ text "Loading" ]
+            h1 [ class "title is-1" ]
+                [ text "Loading" ]
 
         NotFound ->
             Html.map NoOp NotFoundPage.view
