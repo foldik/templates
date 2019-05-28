@@ -1,7 +1,7 @@
-module Api.Resources exposing (NewResource, Resource, createResource, getResource, getResources)
+module Api.Resources exposing (NewResource, PaginatedList, Resource, createResource, getResource, getResources)
 
 import Http
-import Json.Decode exposing (Decoder, andThen, fail, field, int, list, map2, map4, string, succeed)
+import Json.Decode exposing (Decoder, andThen, fail, field, int, list, map, map2, map4, string, succeed)
 import Json.Encode as Encode
 
 
@@ -26,6 +26,23 @@ type alias Resource =
     }
 
 
+type alias PaginatedList a =
+    { page : Int
+    , limit : Int
+    , count : Int
+    , data : List a
+    }
+
+
+paginatedListDecoder : Decoder a -> Decoder (PaginatedList a)
+paginatedListDecoder listDecoder =
+    map4 PaginatedList
+        (field "page" int)
+        (field "limit" int)
+        (field "count" int)
+        (field "data" (list listDecoder))
+
+
 resourceDecoder : Decoder Resource
 resourceDecoder =
     map2 Resource
@@ -46,11 +63,11 @@ createResource msg newResource =
         }
 
 
-getResources : (Result Http.Error (List Resource) -> msg) -> Cmd msg
+getResources : (Result Http.Error (PaginatedList Resource) -> msg) -> Cmd msg
 getResources msg =
     Http.get
-        { url = "/api/resources"
-        , expect = Http.expectJson msg (list resourceDecoder)
+        { url = "/api/resources?page=1&limit=20"
+        , expect = Http.expectJson msg (paginatedListDecoder resourceDecoder)
         }
 
 

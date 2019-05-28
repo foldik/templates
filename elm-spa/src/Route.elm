@@ -37,7 +37,7 @@ toLink route =
             "/preferences"
 
         Resources page size ->
-            "/resources" ++ paramsToString [ paramToSring "page" page String.fromInt, paramToSring "size" size String.fromInt ]
+            "/resources" ++ paramsToString [ paramToSring "page" page String.fromInt, paramToSring "limit" size String.fromInt ]
 
         Resource id ->
             "/resources/" ++ String.fromInt id
@@ -115,7 +115,7 @@ routeParser =
         , map Logout (s "logout")
         , map Preferences (s "preferences")
         , map Resource (s "resources" </> int)
-        , map Resources (s "resources" <?> Query.int "page" <?> Query.int "size")
+        , map Resources (s "resources" <?> Query.int "page" <?> Query.int "limit")
         ]
 
 

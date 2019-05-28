@@ -9,7 +9,7 @@
   "scripts": {
     "clean": "rm -rf dist/",
     "format": "elm-format src/",
-    "dev": "elm-live src/Main.elm -p 9000 --open --pushstate --proxyPrefix /api --proxyHost http://localhost:9001 --start-page=index.html -- --debug --output=dist/main.js",
+    "dev": "elm-live src/Main.elm -p 9000 --open --pushstate --proxyPrefix /api --proxyHost http://localhost:8000 --start-page=index.html -- --debug --output=dist/main.js",
     "build": "elm make src/Main.elm --optimize --output=dist/main.js",
     "build-style": "postcss css/**/*.css --use cssnano --base css --dir dist",
     "uglifyjs": "uglifyjs dist/main.js --compress 'pure_funcs=\"F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9\",pure_getters=true,keep_fargs=false,unsafe_comps=true,unsafe=true,passes=2' --output=dist/main.js && uglifyjs dist/main.js --mangle --output=dist/main.js"

@@ -24,34 +24,34 @@ type alias Model =
     { session : Session.Session
     , notification : Notification.Notification
     , newResourceModal : NewResourceModal.Model
-    , resources : List ResourceApi.Resource
+    , resources : ResourceApi.PaginatedList ResourceApi.Resource
     }
 
 
 init : Session.Session -> Maybe Int -> Maybe Int -> ( Model, Cmd Msg )
-init session maybePageNumber maybePageSize =
+init session maybePageNumber maybePageLimit =
     let
         pageLoad =
-            toPageLoad maybePageNumber maybePageSize
+            toPageLoad maybePageNumber maybePageLimit
     in
     case pageLoad of
-        Load page size ->
-            ( initModel session, ResourceApi.getResources GotResources )
+        Load page limit ->
+            ( initModel page limit session, ResourceApi.getResources GotResources )
 
-        Reload page size ->
+        Reload page limit ->
             let
                 path =
-                    Route.toLink (Route.Resources (Just page) (Just size))
+                    Route.toLink (Route.Resources (Just page) (Just limit))
 
                 cmd =
                     Nav.pushUrl session.key path
             in
-            ( initModel session, cmd )
+            ( initModel page limit session, cmd )
 
 
-initModel : Session.Session -> Model
-initModel session =
-    Model session Notification.Empty (NewResourceModal.init session) []
+initModel : Int -> Int -> Session.Session -> Model
+initModel page limit session =
+    Model session Notification.Empty (NewResourceModal.init session) (ResourceApi.PaginatedList page limit 0 [])
 
 
 type PageLoad
@@ -60,16 +60,16 @@ type PageLoad
 
 
 toPageLoad : Maybe Int -> Maybe Int -> PageLoad
-toPageLoad maybePageNumber maybePageSize =
-    case ( maybePageNumber, maybePageSize ) of
-        ( Just page, Just size ) ->
-            Load page size
+toPageLoad maybePageNumber maybePageLimit =
+    case ( maybePageNumber, maybePageLimit ) of
+        ( Just page, Just limit ) ->
+            Load page limit
 
         ( Just page, Nothing ) ->
             Reload page 10
 
-        ( Nothing, Just size ) ->
-            Reload 1 size
+        ( Nothing, Just limit ) ->
+            Reload 1 limit
 
         ( Nothing, Nothing ) ->
             Reload 1 10
@@ -83,7 +83,7 @@ type Msg
     = NoOp ()
     | CloseNotification
     | CreateResourceFormMsg NewResourceModal.Msg
-    | GotResources (Result Http.Error (List ResourceApi.Resource))
+    | GotResources (Result Http.Error (ResourceApi.PaginatedList ResourceApi.Resource))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -131,7 +131,7 @@ view model =
             ]
         , Html.map CreateResourceFormMsg (NewResourceModal.view model.newResourceModal)
         , Pagination.view (Pagination.Pagination 10 10 40) |> Html.map NoOp
-        , div [] [ CardTable.view 4 model.resources resourceCardView ]
+        , div [] [ CardTable.view 4 model.resources.data resourceCardView ]
         , Pagination.view (Pagination.Pagination 10 10 40) |> Html.map NoOp
         ]
 
