@@ -32,20 +32,6 @@ pub struct NewResource {
 
 type Resources = Arc<Mutex<Vec<Resource>>>;
 
-#[post("/resources", format = "json", data = "<resource_request>")]
-pub fn new(
-    resource_request: Json<NewResource>,
-    resources_state: State<Resources>,
-) -> Json<Resource> {
-    let mut resources = resources_state.lock().unwrap();
-    let resource = Resource {
-        id: 10,
-        name: resource_request.name.clone(),
-    };
-    resources.push(resource.clone());
-    Json(resource)
-}
-
 #[get("/resources?<pageable..>")]
 pub fn get(
     pageable: Form<Pageable>,
@@ -74,4 +60,30 @@ pub fn get(
     } else {
         Err(String::from("Not found"))
     }
+}
+
+#[post("/resources", format = "json", data = "<resource_request>")]
+pub fn new(
+    resource_request: Json<NewResource>,
+    resources_state: State<Resources>,
+) -> Json<Resource> {
+    let mut resources = resources_state.lock().unwrap();
+    let id = match resources.last() {
+        Some(last_element) => last_element.id + 1,
+        None => 1,
+    };
+    let resource = Resource {
+        id: id,
+        name: resource_request.name.clone(),
+    };
+    resources.push(resource.clone());
+    Json(resource)
+}
+
+#[delete("/resources/<id>")]
+pub fn delete(id: usize, resources_state: State<Resources>) -> Result<&'static str, &'static str> {
+    let mut resources = resources_state.lock().unwrap();
+    resources.retain(|item| item.id != id);
+
+    Ok("Ok")
 }
