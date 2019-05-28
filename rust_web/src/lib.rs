@@ -13,7 +13,15 @@ use std::sync::Mutex;
 
 pub fn run() {
     rocket::ignite()
-        .mount("/api", routes!(api::resources::get, api::resources::new, api::resources::delete))
+        .mount(
+            "/api/resources",
+            routes!(
+                api::resources::get,
+                api::resources::get_one,
+                api::resources::create,
+                api::resources::delete
+            ),
+        )
         .manage(Arc::new(Mutex::new(vec![Resource {
             id: 1,
             name: String::from("Hello World!"),

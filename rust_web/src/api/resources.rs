@@ -32,7 +32,7 @@ pub struct NewResource {
 
 type Resources = Arc<Mutex<Vec<Resource>>>;
 
-#[get("/resources?<pageable..>")]
+#[get("/?<pageable..>")]
 pub fn get(
     pageable: Form<Pageable>,
     resources_state: State<Resources>,
@@ -62,8 +62,22 @@ pub fn get(
     }
 }
 
-#[post("/resources", format = "json", data = "<resource_request>")]
-pub fn new(
+#[get("/<id>")]
+pub fn get_one(
+    id: usize,
+    resources_state: State<Resources>,
+) -> Result<Json<Resource>, &'static str> {
+    let resources = resources_state.lock().unwrap();
+    let one_result = resources.iter().find(|&item| item.id == id);
+    let result = match one_result {
+        Some(value) => Ok(Json(value.clone())),
+        None => Err("Not found"),
+    };
+    result
+}
+
+#[post("/", format = "json", data = "<resource_request>")]
+pub fn create(
     resource_request: Json<NewResource>,
     resources_state: State<Resources>,
 ) -> Json<Resource> {
@@ -80,7 +94,7 @@ pub fn new(
     Json(resource)
 }
 
-#[delete("/resources/<id>")]
+#[delete("/<id>")]
 pub fn delete(id: usize, resources_state: State<Resources>) -> Result<&'static str, &'static str> {
     let mut resources = resources_state.lock().unwrap();
     resources.retain(|item| item.id != id);
