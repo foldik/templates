@@ -25,6 +25,7 @@ pub fn run() {
         .manage(Arc::new(Mutex::new(vec![Resource {
             id: 1,
             name: String::from("Hello World!"),
+            short_description: String::from("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."),
         }])))
         .launch();
 }

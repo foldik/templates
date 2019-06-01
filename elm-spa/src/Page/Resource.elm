@@ -71,5 +71,9 @@ view model =
             Html.map NoOp NotFoundPage.view
 
         Loaded resource ->
-            h1 [ class "title is-1" ]
-                [ text resource.name ]
+            div []
+                [ h1 [ class "title is-1" ]
+                    [ text resource.name ]
+                , p [ class "content" ]
+                    [ text resource.shortDescription ]
+                ]

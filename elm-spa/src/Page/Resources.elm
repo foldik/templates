@@ -173,6 +173,10 @@ resourceCardView resource =
                         [ text resource.name ]
                     ]
                 ]
+            , div [ class "card-content" ]
+                [ p [ class "content" ]
+                    [ text resource.shortDescription ]
+                ]
             ]
         ]
 

@@ -1,7 +1,7 @@
 module Api.Resources exposing (NewResource, PaginatedList, Resource, createResource, getResource, getResources)
 
 import Http
-import Json.Decode exposing (Decoder, andThen, fail, field, int, list, map, map2, map4, string, succeed)
+import Json.Decode exposing (Decoder, andThen, fail, field, int, list, map, map2, map3, map4, string, succeed)
 import Json.Encode as Encode
 
 
@@ -11,18 +11,22 @@ import Json.Encode as Encode
 
 type alias NewResource =
     { name : String
+    , shortDescription : String
     }
 
 
 encodeNewResource : NewResource -> Encode.Value
 encodeNewResource newResource =
     Encode.object
-        [ ( "name", Encode.string newResource.name ) ]
+        [ ( "name", Encode.string newResource.name )
+        , ( "short_description", Encode.string newResource.shortDescription )
+        ]
 
 
 type alias Resource =
     { id : Int
     , name : String
+    , shortDescription : String
     }
 
 
@@ -45,9 +49,10 @@ paginatedListDecoder listDecoder =
 
 resourceDecoder : Decoder Resource
 resourceDecoder =
-    map2 Resource
+    map3 Resource
         (field "id" int)
         (field "name" string)
+        (field "short_description" string)
 
 
 

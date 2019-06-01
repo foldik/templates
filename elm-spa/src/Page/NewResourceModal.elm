@@ -18,12 +18,13 @@ type alias Model =
     { session : Session.Session
     , isActive : Bool
     , resourceName : String
+    , shortDescription : String
     }
 
 
 init : Session.Session -> Model
 init session =
-    Model session False ""
+    Model session False "" ""
 
 
 
@@ -34,6 +35,7 @@ type Msg
     = Open
     | Close
     | UpdateResourceName String
+    | UpdateShortDescription String
     | CreateResource
     | CreatedResurce (Result Http.Error ResourceApi.Resource)
 
@@ -50,10 +52,13 @@ update msg model =
         UpdateResourceName value ->
             ( { model | resourceName = value }, Cmd.none )
 
+        UpdateShortDescription value ->
+            ( { model | shortDescription = value }, Cmd.none )
+
         CreateResource ->
             let
                 newResource =
-                    ResourceApi.NewResource model.resourceName
+                    ResourceApi.NewResource model.resourceName model.shortDescription
             in
             ( model, ResourceApi.createResource CreatedResurce newResource )
 
@@ -87,6 +92,12 @@ view model =
                         [ text "Name" ]
                     , div [ class "control" ]
                         [ input [ class "input", type_ "text", placeholder "Name of the resource", value model.resourceName, onInput UpdateResourceName ]
+                            []
+                        ]
+                    ]
+                , div [ class "field" ]
+                    [ div [ class "control" ]
+                        [ textarea [ class "textarea", placeholder "Short description", onInput UpdateShortDescription ]
                             []
                         ]
                     ]

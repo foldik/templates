@@ -23,11 +23,13 @@ pub struct PaginatedList<T> {
 pub struct Resource {
     pub id: usize,
     pub name: String,
+    pub short_description: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct NewResource {
     pub name: String,
+    pub short_description: String,
 }
 
 type Resources = Arc<Mutex<Vec<Resource>>>;
@@ -91,6 +93,7 @@ pub fn create(
     let resource = Resource {
         id: id,
         name: resource_request.name.clone(),
+        short_description: resource_request.short_description.clone(),
     };
     resources.push(resource.clone());
     Json(resource)
