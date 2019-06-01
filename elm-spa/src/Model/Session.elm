@@ -1,8 +1,9 @@
-module Model.Session exposing (Session, allow, authenticated, hasAnyRole, notAuthenticated, setUrl, setUser)
+module Model.Session exposing (Session, allow, authenticated, hasAnyRole, notAuthenticated, setTimeZone, setUrl, setUser)
 
 import Browser.Navigation as Nav
 import Model.Role as Role
 import Model.User as User
+import Time
 import Url
 
 
@@ -10,6 +11,7 @@ type alias Session =
     { maybeUser : Maybe User.User
     , url : Url.Url
     , key : Nav.Key
+    , timeZone : Time.Zone
     }
 
 
@@ -21,6 +23,11 @@ setUser session maybeUser =
 setUrl : Session -> Url.Url -> Session
 setUrl session url =
     { session | url = url }
+
+
+setTimeZone : Session -> Time.Zone -> Session
+setTimeZone session timeZone =
+    { session | timeZone = timeZone }
 
 
 hasAnyRole : List Role.Role -> (Session -> Bool)

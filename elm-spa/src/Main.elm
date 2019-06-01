@@ -21,6 +21,7 @@ import Page.Resource as ResourcePage
 import Page.Resources as ResourcesPage
 import Route
 import Task
+import Time
 import Url
 
 
@@ -62,9 +63,9 @@ init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url key =
     let
         session =
-            Session.Session Nothing url key
+            Session.Session Nothing url key Time.utc
     in
-    ( Model session (Navbar.init session) Loading, Command.send (InitApp Dummy.user) )
+    ( Model session (Navbar.init session) Loading, Task.perform SetTimeZone Time.here )
 
 
 
@@ -73,6 +74,7 @@ init flags url key =
 
 type Msg
     = NoOp ()
+    | SetTimeZone Time.Zone
     | InitApp (Maybe User.User)
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
@@ -87,6 +89,9 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.page ) of
+        ( SetTimeZone timeZone, _ ) ->
+            ( { model | session = Session.setTimeZone model.session timeZone }, Command.send (InitApp Dummy.user) )
+
         ( InitApp maybeUser, _ ) ->
             let
                 session =
