@@ -25,6 +25,7 @@ encodeNewResource newResource =
 
 type alias Resource =
     { id : Int
+    , timestamp : Int
     , name : String
     , shortDescription : String
     }
@@ -49,8 +50,9 @@ paginatedListDecoder listDecoder =
 
 resourceDecoder : Decoder Resource
 resourceDecoder =
-    map3 Resource
+    map4 Resource
         (field "id" int)
+        (field "timestamp" int)
         (field "name" string)
         (field "short_description" string)
 

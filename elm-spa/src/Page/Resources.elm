@@ -5,6 +5,7 @@ import Array
 import Browser.Navigation as Nav
 import Components.Notification as Notification
 import Components.PaginatedCardList as PaginatedCardList
+import DateTime
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -129,7 +130,7 @@ view model =
                 ]
             ]
         , Html.map CreateResourceFormMsg (NewResourceModal.view model.newResourceModal)
-        , PaginatedCardList.view (paginatedViewConfig model.resources)
+        , PaginatedCardList.view (paginatedViewConfig model.session model.resources)
         ]
 
 
@@ -152,33 +153,32 @@ notificationView notification =
             div [] []
 
 
-paginatedViewConfig : ResourceApi.PaginatedList ResourceApi.Resource -> PaginatedCardList.Model ResourceApi.Resource Msg
-paginatedViewConfig paginatedList =
+paginatedViewConfig : Session.Session -> ResourceApi.PaginatedList ResourceApi.Resource -> PaginatedCardList.Model ResourceApi.Resource Msg
+paginatedViewConfig session paginatedList =
     { page = paginatedList.page
     , limit = paginatedList.limit
     , count = paginatedList.count
     , items = paginatedList.data
-    , itemView = resourceCardView
+    , itemView = resourceCardView session
     , hrefFunc = hrefFunc
     }
 
 
-resourceCardView : ResourceApi.Resource -> Html Msg
-resourceCardView resource =
-    a [ href (Route.toLink (Route.Resource resource.id)) ]
-        [ div [ class "card" ]
-            [ div [ class "card-header" ]
-                [ div [ class "card-header-title" ]
+resourceCardView : Session.Session -> (ResourceApi.Resource -> Html Msg)
+resourceCardView session =
+    \resource ->
+        a [ href (Route.toLink (Route.Resource resource.id)) ]
+            [ div [ class "card" ]
+                [ div [ class "card-content" ]
                     [ h1 [ class "title" ]
                         [ text resource.name ]
+                    , p [ class "subtitle is-6" ]
+                        [ text (DateTime.toyyyyMMddhhmm resource.timestamp session.timeZone) ]
+                    , p [ class "content" ]
+                        [ text resource.shortDescription ]
                     ]
                 ]
-            , div [ class "card-content" ]
-                [ p [ class "content" ]
-                    [ text resource.shortDescription ]
-                ]
             ]
-        ]
 
 
 hrefFunc : Int -> Int -> String

@@ -5,6 +5,8 @@ use rocket::State;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use crate::utils::time;
+
 #[derive(FromForm)]
 pub struct Pageable {
     pub page: usize,
@@ -22,6 +24,7 @@ pub struct PaginatedList<T> {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Resource {
     pub id: usize,
+    pub timestamp: u128,
     pub name: String,
     pub short_description: String,
 }
@@ -90,8 +93,10 @@ pub fn create(
         Some(last_element) => last_element.id + 1,
         None => 1,
     };
+
     let resource = Resource {
         id: id,
+        timestamp: time::get_timestamp(),
         name: resource_request.name.clone(),
         short_description: resource_request.short_description.clone(),
     };

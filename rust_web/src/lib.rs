@@ -11,6 +11,10 @@ use api::resources::Resource;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+mod utils;
+
+use utils::time;
+
 pub fn run() {
     rocket::ignite()
         .mount(
@@ -24,6 +28,7 @@ pub fn run() {
         )
         .manage(Arc::new(Mutex::new(vec![Resource {
             id: 1,
+            timestamp: time::get_timestamp(),
             name: String::from("Hello World!"),
             short_description: String::from("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."),
         }])))
