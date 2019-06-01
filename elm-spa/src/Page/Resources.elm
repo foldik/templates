@@ -3,9 +3,8 @@ module Page.Resources exposing (Model, Msg, init, update, view)
 import Api.Resources as ResourceApi
 import Array
 import Browser.Navigation as Nav
-import Components.CardTable as CardTable
 import Components.Notification as Notification
-import Components.Pagination as Pagination
+import Components.PaginatedCardList as PaginatedCardList
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -36,7 +35,7 @@ init session maybePageNumber maybePageLimit =
     in
     case pageLoad of
         Load page limit ->
-            ( initModel page limit session, ResourceApi.getResources GotResources )
+            ( initModel page limit session, ResourceApi.getResources page limit GotResources )
 
         Reload page limit ->
             let
@@ -130,9 +129,7 @@ view model =
                 ]
             ]
         , Html.map CreateResourceFormMsg (NewResourceModal.view model.newResourceModal)
-        , Pagination.view (Pagination.Pagination 10 10 40) |> Html.map NoOp
-        , div [] [ CardTable.view 4 model.resources.data resourceCardView ]
-        , Pagination.view (Pagination.Pagination 10 10 40) |> Html.map NoOp
+        , PaginatedCardList.view (paginatedViewConfig model.resources)
         ]
 
 
@@ -155,6 +152,17 @@ notificationView notification =
             div [] []
 
 
+paginatedViewConfig : ResourceApi.PaginatedList ResourceApi.Resource -> PaginatedCardList.Model ResourceApi.Resource Msg
+paginatedViewConfig paginatedList =
+    { page = paginatedList.page
+    , limit = paginatedList.limit
+    , count = paginatedList.count
+    , items = paginatedList.data
+    , itemView = resourceCardView
+    , hrefFunc = hrefFunc
+    }
+
+
 resourceCardView : ResourceApi.Resource -> Html Msg
 resourceCardView resource =
     a [ href (Route.toLink (Route.Resource resource.id)) ]
@@ -167,3 +175,8 @@ resourceCardView resource =
                 ]
             ]
         ]
+
+
+hrefFunc : Int -> Int -> String
+hrefFunc page limit =
+    Route.toLink (Route.Resources (Just page) (Just limit))

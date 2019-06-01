@@ -63,10 +63,10 @@ createResource msg newResource =
         }
 
 
-getResources : (Result Http.Error (PaginatedList Resource) -> msg) -> Cmd msg
-getResources msg =
+getResources : Int -> Int -> (Result Http.Error (PaginatedList Resource) -> msg) -> Cmd msg
+getResources page limit msg =
     Http.get
-        { url = "/api/resources?page=1&limit=20"
+        { url = "/api/resources?page=" ++ String.fromInt page ++ "&limit=" ++ String.fromInt limit
         , expect = Http.expectJson msg (paginatedListDecoder resourceDecoder)
         }
 

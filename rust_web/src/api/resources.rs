@@ -45,11 +45,13 @@ pub fn get(
         pageable.page * pageable.limit
     };
 
+    let page_count = resources.len() / pageable.limit;
+
     if start_pos < resources.len() {
         Ok(Json(PaginatedList {
             page: pageable.page,
             limit: pageable.limit,
-            count: resources.len(),
+            count: page_count,
             data: resources
                 .clone()
                 .into_iter()
