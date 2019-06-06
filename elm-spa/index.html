@@ -6,7 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Teach</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" />
+  <!-- <link href="https://unpkg.com/sanitize.css" rel="stylesheet" /> -->
+  <link href="https://unpkg.com/sanitize.css/typography.css" rel="stylesheet" />
+  <!-- <link href="https://unpkg.com/sanitize.css/forms.css" rel="stylesheet" />
+  <link href="https://unpkg.com/sanitize.css/formsize.css" rel="stylesheet" />
+  <link href="https://unpkg.com/sanitize.css/measure.css" rel="stylesheet" /> -->
   <link rel="stylesheet" type="text/css" media="screen" href="/dist/main.css" />
 </head>
 
@@ -15,7 +19,7 @@
   <script src="/dist/main.js"></script>
   <script>
     (function () {
-      var app = Elm.Main.init({ node: document.getElementById("app") });
+      Elm.Main.init({ node: document.getElementById("app") });
     }())
   </script>
 </body>
