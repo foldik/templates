@@ -1,4 +1,4 @@
-module Form exposing (Model, Msg, init, update, view)
+module NewProjectForm exposing (Model, Msg, init, update, view)
 
 import Browser
 import Browser.Navigation as Nav
@@ -18,13 +18,14 @@ import User
 
 type alias Model =
     { session : Session.Session
-    , serviceName : FormValue String
+    , projectName : FormValue String
+    , url : FormValue String
     }
 
 
 init : Session.Session -> ( Model, Cmd Msg )
 init session =
-    ( Model session (formParam "" [ notEmpty ]), Cmd.none )
+    ( Model session (formParam "" [ notEmpty ]) (formParam "" [ notEmpty ]), Cmd.none )
 
 
 
@@ -101,27 +102,29 @@ type ValidationResult
 
 
 type Msg
-    = UpdateServiceName String
+    = UpdateProjectName String
+    | UpdateUrl String
     | Submit
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        UpdateServiceName value ->
-            ( { model | serviceName = updateValue value model.serviceName }, Cmd.none )
+        UpdateProjectName value ->
+            ( { model | projectName = updateValue value model.projectName }, Cmd.none )
+
+        UpdateUrl value ->
+            ( { model | url = updateValue value model.url }, Cmd.none )
 
         Submit ->
             let
-                serviceName =
-                    validate model.serviceName
-            in
-            case serviceName of
-                ( _, _, Invalid reason ) ->
-                    ( { model | serviceName = serviceName }, Cmd.none )
+                projectName =
+                    validate model.projectName
 
-                ( _, _, Valid ) ->
-                    ( { model | serviceName = formParam "" [ notEmpty ] }, Cmd.none )
+                url =
+                    validate model.url
+            in
+            ( { model | projectName = projectName, url = url }, Cmd.none )
 
 
 
@@ -131,19 +134,27 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ modelView model
-        , Html.form []
+        [ Html.form []
             [ fieldset []
                 [ legend []
-                    [ text "New Service" ]
+                    [ text "New Project" ]
                 , div []
                     [ label []
-                        [ text "Service name:" ]
+                        [ text "Project name:" ]
                     ]
                 , div []
-                    [ input [ type_ "text", placeholder "Service name", value (getValue model.serviceName), onInput UpdateServiceName, autofocus True ]
+                    [ input [ type_ "text", placeholder "Project name", value (getValue model.projectName), onInput UpdateProjectName, autofocus True ]
                         []
-                    , validationView model.serviceName
+                    , validationView model.projectName
+                    ]
+                , div []
+                    [ label []
+                        [ text "Url:" ]
+                    ]
+                , div []
+                    [ input [ type_ "text", placeholder "url", value (getValue model.url), onInput UpdateUrl, autofocus True ]
+                        []
+                    , validationView model.url
                     ]
                 , div []
                     [ button [ onClick Submit, type_ "button" ]
@@ -151,16 +162,6 @@ view model =
                     ]
                 ]
             ]
-        ]
-
-
-modelView : Model -> Html Msg
-modelView model =
-    div []
-        [ h1 []
-            [ text "Model" ]
-        , p []
-            [ text ("serviceName: " ++ getValue model.serviceName) ]
         ]
 
 

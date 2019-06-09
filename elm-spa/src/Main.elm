@@ -2,10 +2,10 @@ module Main exposing (Model, Msg(..), init, main, pageView, subscriptions, updat
 
 import Browser
 import Browser.Navigation as Nav
-import Form
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import NewProjectForm
 import Route
 import Session
 import Time
@@ -38,7 +38,7 @@ type alias Model =
 type Page
     = NotFound
     | Home
-    | FormPage Form.Model
+    | NewProjectFormPage NewProjectForm.Model
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -62,12 +62,12 @@ routeToPage session route =
         Route.Home ->
             ( Home, Cmd.none )
 
-        Route.Form ->
+        Route.NewProject ->
             let
                 ( pageModel, pageMsg ) =
-                    Form.init session
+                    NewProjectForm.init session
             in
-            ( FormPage pageModel, Cmd.map FormMsg pageMsg )
+            ( NewProjectFormPage pageModel, Cmd.map NewProjectFormMsg pageMsg )
 
 
 
@@ -78,7 +78,7 @@ type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | Navigate Route.Route
-    | FormMsg Form.Msg
+    | NewProjectFormMsg NewProjectForm.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -108,12 +108,12 @@ update msg model =
             in
             ( { model | session = session, page = page }, command )
 
-        ( FormMsg pageMsg, FormPage pageModel ) ->
+        ( NewProjectFormMsg pageMsg, NewProjectFormPage pageModel ) ->
             let
                 ( newPageModel, newPageMsg ) =
-                    Form.update pageMsg pageModel
+                    NewProjectForm.update pageMsg pageModel
             in
-            ( { model | page = FormPage newPageModel }, Cmd.map FormMsg newPageMsg )
+            ( { model | page = NewProjectFormPage newPageModel }, Cmd.map NewProjectFormMsg newPageMsg )
 
         ( _, _ ) ->
             ( model, Cmd.none )
@@ -136,9 +136,8 @@ view model =
 navBar : Model -> Html Msg
 navBar model =
     nav []
-        [ select []
-            [ option [ value "form", onClick (Navigate Route.Form) ]
-                [ text "Form" ]
+        [ a [ href (Route.toLink Route.NewProject) ]
+            [ text (Route.toString Route.NewProject)
             ]
         ]
 
@@ -154,9 +153,9 @@ pageView model =
             h1 []
                 [ text "Home" ]
 
-        FormPage pageModel ->
-            Form.view pageModel
-                |> Html.map FormMsg
+        NewProjectFormPage pageModel ->
+            NewProjectForm.view pageModel
+                |> Html.map NewProjectFormMsg
 
 
 

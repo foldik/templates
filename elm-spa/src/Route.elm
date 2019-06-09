@@ -8,7 +8,7 @@ import Url.Parser.Query as Query
 type Route
     = NotFound
     | Home
-    | Form
+    | NewProject
 
 
 toLink : Route -> String
@@ -20,8 +20,8 @@ toLink route =
         Home ->
             "/"
 
-        Form ->
-            "/form"
+        NewProject ->
+            "/projects/new"
 
 
 toString : Route -> String
@@ -33,8 +33,8 @@ toString route =
         Home ->
             "Home"
 
-        Form ->
-            "Form"
+        NewProject ->
+            "New project"
 
 
 router : Url.Url -> Route
@@ -46,5 +46,5 @@ routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         [ map Home top
-        , map Form (s "form")
+        , map NewProject (s "projects/new")
         ]
