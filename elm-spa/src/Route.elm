@@ -46,5 +46,5 @@ routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         [ map Home top
-        , map NewProject (s "projects/new")
+        , map NewProject (s "projects" </> s "new")
         ]
