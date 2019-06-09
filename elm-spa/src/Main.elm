@@ -6,6 +6,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import NewProjectForm
+import NewUserForm
 import Route
 import Session
 import Time
@@ -39,6 +40,7 @@ type Page
     = NotFound
     | Home
     | NewProjectFormPage NewProjectForm.Model
+    | NewUserFormPage NewUserForm.Model
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -69,6 +71,13 @@ routeToPage session route =
             in
             ( NewProjectFormPage pageModel, Cmd.map NewProjectFormMsg pageMsg )
 
+        Route.NewUser ->
+            let
+                ( pageModel, pageMsg ) =
+                    NewUserForm.init session
+            in
+            ( NewUserFormPage pageModel, Cmd.map NewUserFormMsg pageMsg )
+
 
 
 -- UPDATE
@@ -79,6 +88,7 @@ type Msg
     | UrlChanged Url.Url
     | Navigate Route.Route
     | NewProjectFormMsg NewProjectForm.Msg
+    | NewUserFormMsg NewUserForm.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -115,6 +125,13 @@ update msg model =
             in
             ( { model | page = NewProjectFormPage newPageModel }, Cmd.map NewProjectFormMsg newPageMsg )
 
+        ( NewUserFormMsg pageMsg, NewUserFormPage pageModel ) ->
+            let
+                ( newPageModel, newPageMsg ) =
+                    NewUserForm.update pageMsg pageModel
+            in
+            ( { model | page = NewUserFormPage newPageModel }, Cmd.map NewUserFormMsg newPageMsg )
+
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -139,6 +156,8 @@ navBar model =
         [ a [ href (Route.toLink Route.NewProject) ]
             [ text (Route.toString Route.NewProject)
             ]
+        , a [ href (Route.toLink Route.NewUser) ]
+            [ text (Route.toString Route.NewUser) ]
         ]
 
 
@@ -156,6 +175,10 @@ pageView model =
         NewProjectFormPage pageModel ->
             NewProjectForm.view pageModel
                 |> Html.map NewProjectFormMsg
+
+        NewUserFormPage pageModel ->
+            NewUserForm.view pageModel
+                |> Html.map NewUserFormMsg
 
 
 

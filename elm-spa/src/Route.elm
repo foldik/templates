@@ -9,6 +9,7 @@ type Route
     = NotFound
     | Home
     | NewProject
+    | NewUser
 
 
 toLink : Route -> String
@@ -23,6 +24,9 @@ toLink route =
         NewProject ->
             "/projects/new"
 
+        NewUser ->
+            "/users/new"
+
 
 toString : Route -> String
 toString route =
@@ -36,6 +40,9 @@ toString route =
         NewProject ->
             "New project"
 
+        NewUser ->
+            "New user"
+
 
 router : Url.Url -> Route
 router url =
@@ -47,4 +54,5 @@ routeParser =
     oneOf
         [ map Home top
         , map NewProject (s "projects" </> s "new")
+        , map NewUser (s "users" </> s "new")
         ]
