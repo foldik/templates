@@ -10,6 +10,7 @@ type Route
     | Home
     | NewProject
     | NewUser
+    | Services
 
 
 toLink : Route -> String
@@ -27,6 +28,9 @@ toLink route =
         NewUser ->
             "/users/new"
 
+        Services ->
+            "/services"
+
 
 toString : Route -> String
 toString route =
@@ -43,6 +47,9 @@ toString route =
         NewUser ->
             "New user"
 
+        Services ->
+            "Services"
+
 
 router : Url.Url -> Route
 router url =
@@ -55,4 +62,5 @@ routeParser =
         [ map Home top
         , map NewProject (s "projects" </> s "new")
         , map NewUser (s "users" </> s "new")
+        , map Services (s "services")
         ]

@@ -8,6 +8,7 @@ import Html.Events exposing (..)
 import NewProjectForm
 import NewUserForm
 import Route
+import ServicesTable
 import Session
 import Time
 import Url
@@ -41,6 +42,7 @@ type Page
     | Home
     | NewProjectFormPage NewProjectForm.Model
     | NewUserFormPage NewUserForm.Model
+    | ServicesTablePage ServicesTable.Model
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -78,6 +80,13 @@ routeToPage session route =
             in
             ( NewUserFormPage pageModel, Cmd.map NewUserFormMsg pageMsg )
 
+        Route.Services ->
+            let
+                ( pageModel, pageMsg ) =
+                    ServicesTable.init session
+            in
+            ( ServicesTablePage pageModel, Cmd.map ServicesTableMsg pageMsg )
+
 
 
 -- UPDATE
@@ -86,9 +95,9 @@ routeToPage session route =
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
-    | Navigate Route.Route
     | NewProjectFormMsg NewProjectForm.Msg
     | NewUserFormMsg NewUserForm.Msg
+    | ServicesTableMsg ServicesTable.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -101,9 +110,6 @@ update msg model =
 
                 Browser.External href ->
                     ( model, Nav.load href )
-
-        ( Navigate route, _ ) ->
-            ( model, Nav.pushUrl model.session.key (Route.toLink route) )
 
         ( UrlChanged url, _ ) ->
             let
@@ -132,6 +138,13 @@ update msg model =
             in
             ( { model | page = NewUserFormPage newPageModel }, Cmd.map NewUserFormMsg newPageMsg )
 
+        ( ServicesTableMsg pageMsg, ServicesTablePage pageModel ) ->
+            let
+                ( newPageModel, newPageMsg ) =
+                    ServicesTable.update pageMsg pageModel
+            in
+            ( { model | page = ServicesTablePage newPageModel }, Cmd.map ServicesTableMsg newPageMsg )
+
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -153,11 +166,16 @@ view model =
 navBar : Model -> Html Msg
 navBar model =
     nav []
-        [ a [ href (Route.toLink Route.NewProject) ]
-            [ text (Route.toString Route.NewProject)
-            ]
-        , a [ href (Route.toLink Route.NewUser) ]
-            [ text (Route.toString Route.NewUser) ]
+        [ navItem Route.Services
+        , navItem Route.NewUser
+        , navItem Route.NewProject
+        ]
+
+
+navItem : Route.Route -> Html Msg
+navItem route =
+    a [ href (Route.toLink route) ]
+        [ text (Route.toString route)
         ]
 
 
@@ -179,6 +197,10 @@ pageView model =
         NewUserFormPage pageModel ->
             NewUserForm.view pageModel
                 |> Html.map NewUserFormMsg
+
+        ServicesTablePage pageModel ->
+            ServicesTable.view pageModel
+                |> Html.map ServicesTableMsg
 
 
 
