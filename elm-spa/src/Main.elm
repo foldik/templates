@@ -5,6 +5,7 @@ import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import NewMeetingForm
 import NewProjectForm
 import NewUserForm
 import Route
@@ -42,6 +43,7 @@ type Page
     | Home
     | NewProjectFormPage NewProjectForm.Model
     | NewUserFormPage NewUserForm.Model
+    | NewMeetingFormPage NewMeetingForm.Model
     | ServicesTablePage ServicesTable.Model
 
 
@@ -80,6 +82,13 @@ routeToPage session route =
             in
             ( NewUserFormPage pageModel, Cmd.map NewUserFormMsg pageMsg )
 
+        Route.NewMeeting ->
+            let
+                ( pageModel, pageMsg ) =
+                    NewMeetingForm.init session
+            in
+            ( NewMeetingFormPage pageModel, Cmd.map NewMeetingFormMsg pageMsg )
+
         Route.Services ->
             let
                 ( pageModel, pageMsg ) =
@@ -97,6 +106,7 @@ type Msg
     | UrlChanged Url.Url
     | NewProjectFormMsg NewProjectForm.Msg
     | NewUserFormMsg NewUserForm.Msg
+    | NewMeetingFormMsg NewMeetingForm.Msg
     | ServicesTableMsg ServicesTable.Msg
 
 
@@ -138,6 +148,13 @@ update msg model =
             in
             ( { model | page = NewUserFormPage newPageModel }, Cmd.map NewUserFormMsg newPageMsg )
 
+        ( NewMeetingFormMsg pageMsg, NewMeetingFormPage pageModel ) ->
+            let
+                ( newPageModel, newPageMsg ) =
+                    NewMeetingForm.update pageMsg pageModel
+            in
+            ( { model | page = NewMeetingFormPage newPageModel }, Cmd.map NewMeetingFormMsg newPageMsg )
+
         ( ServicesTableMsg pageMsg, ServicesTablePage pageModel ) ->
             let
                 ( newPageModel, newPageMsg ) =
@@ -167,6 +184,7 @@ navBar : Model -> Html Msg
 navBar model =
     nav []
         [ navItem Route.Services
+        , navItem Route.NewMeeting
         , navItem Route.NewUser
         , navItem Route.NewProject
         ]
@@ -197,6 +215,10 @@ pageView model =
         NewUserFormPage pageModel ->
             NewUserForm.view pageModel
                 |> Html.map NewUserFormMsg
+
+        NewMeetingFormPage pageModel ->
+            NewMeetingForm.view pageModel
+                |> Html.map NewMeetingFormMsg
 
         ServicesTablePage pageModel ->
             ServicesTable.view pageModel

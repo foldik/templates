@@ -81,4 +81,10 @@ list =
       , instances = 1
       , url = "http://localhost:9000/jenkins"
       }
+    , { name = "new-meeting-service"
+      , version = "0.7.1"
+      , state = Running
+      , instances = 2
+      , url = "http://localhost:9000/meetings/new"
+      }
     ]

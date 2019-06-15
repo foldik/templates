@@ -10,6 +10,7 @@ type Route
     | Home
     | NewProject
     | NewUser
+    | NewMeeting
     | Services
 
 
@@ -27,6 +28,9 @@ toLink route =
 
         NewUser ->
             "/users/new"
+
+        NewMeeting ->
+            "/meetings/new"
 
         Services ->
             "/services"
@@ -47,6 +51,9 @@ toString route =
         NewUser ->
             "New user"
 
+        NewMeeting ->
+            "New meeting"
+
         Services ->
             "Services"
 
@@ -62,5 +69,6 @@ routeParser =
         [ map Home top
         , map NewProject (s "projects" </> s "new")
         , map NewUser (s "users" </> s "new")
+        , map NewMeeting (s "meetings" </> s "new")
         , map Services (s "services")
         ]
