@@ -133,15 +133,18 @@ update msg model =
                 preparedSearchValue =
                     String.toLower (String.trim value)
 
+                usersWithoutSelected =
+                    List.filter (\user -> List.all (\selected -> not (selected.id == user.id)) model.newMeeting.participiants) Users.list
+
                 suggestedParticipiants =
                     case String.length preparedSearchValue of
                         0 ->
                             []
 
                         _ ->
-                            List.filter (\user -> filterUsers preparedSearchValue user) Users.list
+                            List.filter (\user -> filterUsers preparedSearchValue user) usersWithoutSelected
             in
-            ( { model | suggestedParticipiants = suggestedParticipiants }, Cmd.none )
+            ( { model | suggestedParticipiants = suggestedParticipiants, userSearchText = value }, Cmd.none )
 
         AddParticipiant user ->
             let
@@ -154,7 +157,7 @@ update msg model =
                 newMeeting =
                     { meeting | participiants = participiants }
             in
-            ( { model | newMeeting = newMeeting, suggestedParticipiants = [] }, Cmd.none )
+            ( { model | newMeeting = newMeeting, suggestedParticipiants = [], userSearchText = "" }, Cmd.none )
 
         RemoveParticipiant user ->
             let
@@ -167,7 +170,7 @@ update msg model =
                 newMeeting =
                     { meeting | participiants = participiants }
             in
-            ( { model | newMeeting = newMeeting, suggestedParticipiants = [] }, Cmd.none )
+            ( { model | newMeeting = newMeeting, suggestedParticipiants = [], userSearchText = "" }, Cmd.none )
 
 
 filterUsers : String -> Users.User -> Bool
@@ -235,7 +238,7 @@ view model =
             , div []
                 [ selectedParticipiants model.newMeeting.participiants ]
             , div []
-                [ input [ type_ "text", placeholder "Start typeing", onInput SearchParticipiant ]
+                [ input [ type_ "text", placeholder "Start typeing", value model.userSearchText, onInput SearchParticipiant ]
                     []
                 ]
             , div []
