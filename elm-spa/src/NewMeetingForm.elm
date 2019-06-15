@@ -21,6 +21,8 @@ import User
 type alias Model =
     { session : Session.Session
     , newMeeting : NewMeeting
+    , userSearchText : String
+    , suggestedParticipiants : List Users.User
     }
 
 
@@ -30,13 +32,21 @@ type alias NewMeeting =
     , date : Forms.Value String
     , from : Forms.Value String
     , to : Forms.Value String
-    , participiants : List (Forms.Value String)
+    , participiants : List Users.User
     }
 
 
 init : Session.Session -> ( Model, Cmd Msg )
 init session =
-    ( Model session emptyNewMeeting, Cmd.none )
+    let
+        model =
+            { session = session
+            , newMeeting = emptyNewMeeting
+            , userSearchText = ""
+            , suggestedParticipiants = []
+            }
+    in
+    ( model, Cmd.none )
 
 
 emptyNewMeeting : NewMeeting
@@ -60,6 +70,9 @@ type Msg
     | UpdateDate String
     | UpdateFrom String
     | UpdateTo String
+    | SearchParticipiant String
+    | AddParticipiant Users.User
+    | RemoveParticipiant Users.User
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -115,6 +128,67 @@ update msg model =
             in
             ( { model | newMeeting = newMeeting }, Cmd.none )
 
+        SearchParticipiant value ->
+            let
+                preparedSearchValue =
+                    String.toLower (String.trim value)
+
+                suggestedParticipiants =
+                    case String.length preparedSearchValue of
+                        0 ->
+                            []
+
+                        _ ->
+                            List.filter (\user -> filterUsers preparedSearchValue user) Users.list
+            in
+            ( { model | suggestedParticipiants = suggestedParticipiants }, Cmd.none )
+
+        AddParticipiant user ->
+            let
+                meeting =
+                    model.newMeeting
+
+                participiants =
+                    meeting.participiants ++ [ user ]
+
+                newMeeting =
+                    { meeting | participiants = participiants }
+            in
+            ( { model | newMeeting = newMeeting, suggestedParticipiants = [] }, Cmd.none )
+
+        RemoveParticipiant user ->
+            let
+                meeting =
+                    model.newMeeting
+
+                participiants =
+                    List.filter (\u -> not (user.id == u.id)) meeting.participiants
+
+                newMeeting =
+                    { meeting | participiants = participiants }
+            in
+            ( { model | newMeeting = newMeeting, suggestedParticipiants = [] }, Cmd.none )
+
+
+filterUsers : String -> Users.User -> Bool
+filterUsers value user =
+    let
+        firstName =
+            String.toLower user.firstName
+
+        lastName =
+            String.toLower user.lastName
+    in
+    case ( String.startsWith value firstName, String.startsWith value lastName ) of
+        ( True, _ ) ->
+            True
+
+        ( _, True ) ->
+            True
+
+        _ ->
+            False
+
 
 
 -- VIEW
@@ -154,5 +228,51 @@ view model =
                 , input [ type_ "time", onInput UpdateTo ]
                     []
                 ]
+            , div []
+                [ label []
+                    [ text "Participiants:" ]
+                ]
+            , div []
+                [ selectedParticipiants model.newMeeting.participiants ]
+            , div []
+                [ input [ type_ "text", placeholder "Start typeing", onInput SearchParticipiant ]
+                    []
+                ]
+            , div []
+                [ particpiantsSelector model.suggestedParticipiants ]
             ]
+        ]
+
+
+selectedParticipiants : List Users.User -> Html Msg
+selectedParticipiants users =
+    div []
+        (List.map selectedUser users)
+
+
+selectedUser : Users.User -> Html Msg
+selectedUser user =
+    span []
+        [ strong []
+            [ text (user.firstName ++ " " ++ user.lastName) ]
+        , button [ type_ "button", onClick (RemoveParticipiant user) ]
+            [ text "Remove" ]
+        ]
+
+
+particpiantsSelector : List Users.User -> Html Msg
+particpiantsSelector users =
+    div []
+        (List.map selectableUser users)
+
+
+selectableUser : Users.User -> Html Msg
+selectableUser user =
+    div []
+        [ strong []
+            [ text (user.firstName ++ " " ++ user.lastName) ]
+        , a [ href "/users" ]
+            [ text ("@" ++ user.userName) ]
+        , button [ type_ "button", onClick (AddParticipiant user) ]
+            [ text "Add" ]
         ]
