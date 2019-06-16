@@ -3,7 +3,6 @@ module NewMeetingForm exposing (Model, Msg, init, update, view)
 import Browser
 import Browser.Navigation as Nav
 import Dummy.Users as Users
-import Forms
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -23,15 +22,16 @@ type alias Model =
     , newMeeting : NewMeeting
     , userSearchText : String
     , suggestedParticipiants : List Users.User
+    , users : List Users.User
     }
 
 
 type alias NewMeeting =
-    { title : Forms.Value String
-    , description : Forms.Value String
-    , date : Forms.Value String
-    , from : Forms.Value String
-    , to : Forms.Value String
+    { title : String
+    , description : String
+    , date : String
+    , from : String
+    , to : String
     , participiants : List Users.User
     }
 
@@ -43,7 +43,8 @@ init session =
             { session = session
             , newMeeting = emptyNewMeeting
             , userSearchText = ""
-            , suggestedParticipiants = []
+            , suggestedParticipiants = Users.list
+            , users = Users.list
             }
     in
     ( model, Cmd.none )
@@ -51,11 +52,11 @@ init session =
 
 emptyNewMeeting : NewMeeting
 emptyNewMeeting =
-    { title = Forms.formParam "" [ Forms.notEmpty ]
-    , description = Forms.formParam "" [ Forms.notEmpty ]
-    , date = Forms.formParam "" [ Forms.notEmpty ]
-    , from = Forms.formParam "" [ Forms.notEmpty ]
-    , to = Forms.formParam "" [ Forms.notEmpty ]
+    { title = ""
+    , description = ""
+    , date = ""
+    , from = ""
+    , to = ""
     , participiants = []
     }
 
@@ -84,7 +85,7 @@ update msg model =
                     model.newMeeting
 
                 newMeeting =
-                    { meeting | title = Forms.setValue value meeting.title }
+                    { meeting | title = value }
             in
             ( { model | newMeeting = newMeeting }, Cmd.none )
 
@@ -94,7 +95,7 @@ update msg model =
                     model.newMeeting
 
                 newMeeting =
-                    { meeting | description = Forms.setValue value meeting.description }
+                    { meeting | description = value }
             in
             ( { model | newMeeting = newMeeting }, Cmd.none )
 
@@ -104,7 +105,7 @@ update msg model =
                     model.newMeeting
 
                 newMeeting =
-                    { meeting | date = Forms.setValue value meeting.date }
+                    { meeting | date = value }
             in
             ( { model | newMeeting = newMeeting }, Cmd.none )
 
@@ -114,7 +115,7 @@ update msg model =
                     model.newMeeting
 
                 newMeeting =
-                    { meeting | from = Forms.setValue value meeting.from }
+                    { meeting | from = value }
             in
             ( { model | newMeeting = newMeeting }, Cmd.none )
 
@@ -124,7 +125,7 @@ update msg model =
                     model.newMeeting
 
                 newMeeting =
-                    { meeting | to = Forms.setValue value meeting.to }
+                    { meeting | to = value }
             in
             ( { model | newMeeting = newMeeting }, Cmd.none )
 
@@ -133,16 +134,13 @@ update msg model =
                 preparedSearchValue =
                     String.toLower (String.trim value)
 
-                usersWithoutSelected =
-                    List.filter (\user -> List.all (\selected -> not (selected.id == user.id)) model.newMeeting.participiants) Users.list
-
                 suggestedParticipiants =
                     case String.length preparedSearchValue of
                         0 ->
-                            []
+                            model.users
 
                         _ ->
-                            List.filter (\user -> filterUsers preparedSearchValue user) usersWithoutSelected
+                            List.filter (\user -> filterUsers preparedSearchValue user) model.users
             in
             ( { model | suggestedParticipiants = suggestedParticipiants, userSearchText = value }, Cmd.none )
 
@@ -156,8 +154,11 @@ update msg model =
 
                 newMeeting =
                     { meeting | participiants = participiants }
+
+                users =
+                    List.filter (\u -> not (u.id == user.id)) model.users
             in
-            ( { model | newMeeting = newMeeting, suggestedParticipiants = [], userSearchText = "" }, Cmd.none )
+            ( { model | newMeeting = newMeeting, suggestedParticipiants = users, users = users, userSearchText = "" }, Cmd.none )
 
         RemoveParticipiant user ->
             let
@@ -169,8 +170,11 @@ update msg model =
 
                 newMeeting =
                     { meeting | participiants = participiants }
+
+                users =
+                    [ user ] ++ model.users
             in
-            ( { model | newMeeting = newMeeting, suggestedParticipiants = [], userSearchText = "" }, Cmd.none )
+            ( { model | newMeeting = newMeeting, suggestedParticipiants = users, users = users, userSearchText = "" }, Cmd.none )
 
 
 filterUsers : String -> Users.User -> Bool
@@ -241,6 +245,8 @@ view model =
                 [ input [ type_ "text", placeholder "Start typeing", value model.userSearchText, onInput SearchParticipiant ]
                     []
                 ]
+            , div []
+                [ text "Users:" ]
             , div []
                 [ particpiantsSelector model.suggestedParticipiants ]
             ]
