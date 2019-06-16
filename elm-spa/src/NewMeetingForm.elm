@@ -8,6 +8,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Route
 import Session
+import Task
 import Time
 import Url
 import User
@@ -19,6 +20,7 @@ import User
 
 type alias Model =
     { session : Session.Session
+    , time : Time.Posix
     , newMeeting : NewMeeting
     , userSearchText : String
     , users : List Users.User
@@ -40,12 +42,13 @@ init session =
     let
         model =
             { session = session
+            , time = Time.millisToPosix 0
             , newMeeting = emptyNewMeeting
             , userSearchText = ""
             , users = Users.list
             }
     in
-    ( model, Cmd.none )
+    ( model, Task.perform GetTime Time.now )
 
 
 emptyNewMeeting : NewMeeting
@@ -64,7 +67,8 @@ emptyNewMeeting =
 
 
 type Msg
-    = UpdateTitle String
+    = GetTime Time.Posix
+    | UpdateTitle String
     | UpdateDescription String
     | UpdateDate String
     | UpdateFrom String
@@ -77,6 +81,16 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GetTime time ->
+            let
+                meeting =
+                    model.newMeeting
+
+                newMeeting =
+                    { meeting | date = toDate model.session.timeZone time }
+            in
+            ( { model | newMeeting = newMeeting, time = time }, Cmd.none )
+
         UpdateTitle value ->
             let
                 meeting =
@@ -194,7 +208,7 @@ view model =
                     [ text "Time:" ]
                 ]
             , div []
-                [ input [ type_ "date", onInput UpdateDate ]
+                [ input [ type_ "date", onInput UpdateDate, value model.newMeeting.date, Html.Attributes.min (toDate model.session.timeZone model.time) ]
                     []
                 , input [ type_ "time", onInput UpdateFrom ]
                     []
@@ -215,8 +229,67 @@ view model =
                 [ text "Users:" ]
             , div []
                 (List.map selectableUser (getMatchedUsers model.userSearchText model.users))
+            , div []
+                [ button [ type_ "button" ]
+                    [ text "Save" ]
+                ]
             ]
         ]
+
+
+toDate : Time.Zone -> Time.Posix -> String
+toDate zone time =
+    let
+        year =
+            Time.toYear zone time
+
+        month =
+            Time.toMonth zone time
+
+        day =
+            Time.toDay zone time
+    in
+    String.fromInt year ++ "-" ++ toMonthNumber month ++ "-" ++ String.fromInt day
+
+
+toMonthNumber : Time.Month -> String
+toMonthNumber month =
+    case month of
+        Time.Jan ->
+            "01"
+
+        Time.Feb ->
+            "02"
+
+        Time.Mar ->
+            "03"
+
+        Time.Apr ->
+            "04"
+
+        Time.May ->
+            "05"
+
+        Time.Jun ->
+            "06"
+
+        Time.Jul ->
+            "07"
+
+        Time.Aug ->
+            "08"
+
+        Time.Sep ->
+            "09"
+
+        Time.Oct ->
+            "10"
+
+        Time.Nov ->
+            "11"
+
+        Time.Dec ->
+            "12"
 
 
 getMatchedUsers : String -> List Users.User -> List Users.User

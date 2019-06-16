@@ -11,6 +11,7 @@ import NewUserForm
 import Route
 import ServicesTable
 import Session
+import Task
 import Time
 import Url
 import User
@@ -52,11 +53,8 @@ init flags url key =
     let
         session =
             { user = Nothing, url = url, key = key, timeZone = Time.utc }
-
-        ( page, command ) =
-            routeToPage session (Route.router url)
     in
-    ( { session = session, page = page }, command )
+    ( { session = session, page = NotFound }, Task.perform AdjustTimeZone Time.here )
 
 
 routeToPage : Session.Session -> Route.Route -> ( Page, Cmd Msg )
@@ -104,6 +102,7 @@ routeToPage session route =
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
+    | AdjustTimeZone Time.Zone
     | NewProjectFormMsg NewProjectForm.Msg
     | NewUserFormMsg NewUserForm.Msg
     | NewMeetingFormMsg NewMeetingForm.Msg
@@ -131,6 +130,19 @@ update msg model =
 
                 ( page, command ) =
                     routeToPage session (Route.router url)
+            in
+            ( { model | session = session, page = page }, command )
+
+        ( AdjustTimeZone zone, _ ) ->
+            let
+                oldSession =
+                    model.session
+
+                session =
+                    { oldSession | timeZone = zone }
+
+                ( page, command ) =
+                    routeToPage session (Route.router session.url)
             in
             ( { model | session = session, page = page }, command )
 
