@@ -21,7 +21,6 @@ type alias Model =
     { session : Session.Session
     , newMeeting : NewMeeting
     , userSearchText : String
-    , suggestedParticipiants : List Users.User
     , users : List Users.User
     }
 
@@ -43,7 +42,6 @@ init session =
             { session = session
             , newMeeting = emptyNewMeeting
             , userSearchText = ""
-            , suggestedParticipiants = Users.list
             , users = Users.list
             }
     in
@@ -130,19 +128,7 @@ update msg model =
             ( { model | newMeeting = newMeeting }, Cmd.none )
 
         SearchParticipiant value ->
-            let
-                preparedSearchValue =
-                    String.toLower (String.trim value)
-
-                suggestedParticipiants =
-                    case String.length preparedSearchValue of
-                        0 ->
-                            model.users
-
-                        _ ->
-                            List.filter (\user -> filterUsers preparedSearchValue user) model.users
-            in
-            ( { model | suggestedParticipiants = suggestedParticipiants, userSearchText = value }, Cmd.none )
+            ( { model | userSearchText = value }, Cmd.none )
 
         AddParticipiant user ->
             let
@@ -158,7 +144,7 @@ update msg model =
                 users =
                     List.filter (\u -> not (u.id == user.id)) model.users
             in
-            ( { model | newMeeting = newMeeting, suggestedParticipiants = users, users = users, userSearchText = "" }, Cmd.none )
+            ( { model | newMeeting = newMeeting, users = users, userSearchText = "" }, Cmd.none )
 
         RemoveParticipiant user ->
             let
@@ -174,27 +160,7 @@ update msg model =
                 users =
                     [ user ] ++ model.users
             in
-            ( { model | newMeeting = newMeeting, suggestedParticipiants = users, users = users, userSearchText = "" }, Cmd.none )
-
-
-filterUsers : String -> Users.User -> Bool
-filterUsers value user =
-    let
-        firstName =
-            String.toLower user.firstName
-
-        lastName =
-            String.toLower user.lastName
-    in
-    case ( String.startsWith value firstName, String.startsWith value lastName ) of
-        ( True, _ ) ->
-            True
-
-        ( _, True ) ->
-            True
-
-        _ ->
-            False
+            ( { model | newMeeting = newMeeting, users = users, userSearchText = "" }, Cmd.none )
 
 
 
@@ -240,7 +206,7 @@ view model =
                     [ text "Participiants:" ]
                 ]
             , div []
-                [ selectedParticipiants model.newMeeting.participiants ]
+                (List.map selectedUser model.newMeeting.participiants)
             , div []
                 [ input [ type_ "text", placeholder "Start typeing", value model.userSearchText, onInput SearchParticipiant ]
                     []
@@ -248,15 +214,43 @@ view model =
             , div []
                 [ text "Users:" ]
             , div []
-                [ particpiantsSelector model.suggestedParticipiants ]
+                (List.map selectableUser (getMatchedUsers model.userSearchText model.users))
             ]
         ]
 
 
-selectedParticipiants : List Users.User -> Html Msg
-selectedParticipiants users =
-    div []
-        (List.map selectedUser users)
+getMatchedUsers : String -> List Users.User -> List Users.User
+getMatchedUsers searchText users =
+    let
+        preparedSearchValue =
+            String.toLower (String.trim searchText)
+    in
+    case String.length preparedSearchValue of
+        0 ->
+            users
+
+        _ ->
+            List.filter (\user -> filterUsers preparedSearchValue user) users
+
+
+filterUsers : String -> Users.User -> Bool
+filterUsers value user =
+    let
+        firstName =
+            String.toLower user.firstName
+
+        lastName =
+            String.toLower user.lastName
+    in
+    case ( String.startsWith value firstName, String.startsWith value lastName ) of
+        ( True, _ ) ->
+            True
+
+        ( _, True ) ->
+            True
+
+        _ ->
+            False
 
 
 selectedUser : Users.User -> Html Msg
@@ -267,12 +261,6 @@ selectedUser user =
         , button [ type_ "button", onClick (RemoveParticipiant user) ]
             [ text "Remove" ]
         ]
-
-
-particpiantsSelector : List Users.User -> Html Msg
-particpiantsSelector users =
-    div []
-        (List.map selectableUser users)
 
 
 selectableUser : Users.User -> Html Msg
