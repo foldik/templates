@@ -21,14 +21,14 @@ import User
 type alias Model =
     { session : Session.Session
     , time : Time.Posix
-    , newMeeting : NewMeeting
+    , meeting : Meeting
     , formValidation : FormValidation
     , userSearchText : String
     , users : List Users.User
     }
 
 
-type alias NewMeeting =
+type alias Meeting =
     { title : String
     , description : String
     , date : String
@@ -37,9 +37,11 @@ type alias NewMeeting =
     , participiants : List Users.User
     }
 
+
 type alias FormValidation =
     { title : Validation
     }
+
 
 type Validation
     = Valid
@@ -53,17 +55,22 @@ init session =
         model =
             { session = session
             , time = Time.millisToPosix 0
-            , newMeeting = emptyNewMeeting
+            , meeting = emptyMeeting
             , formValidation = emptyFormValidation
             , userSearchText = ""
             , users = Users.list
             }
     in
-    ( model, Task.perform GetTime Time.now )
+    ( model, setTime )
 
 
-emptyNewMeeting : NewMeeting
-emptyNewMeeting =
+setTime : Cmd Msg
+setTime =
+    Task.perform SetTime Time.now
+
+
+emptyMeeting : Meeting
+emptyMeeting =
     { title = ""
     , description = ""
     , date = ""
@@ -71,6 +78,7 @@ emptyNewMeeting =
     , to = ""
     , participiants = []
     }
+
 
 emptyFormValidation : FormValidation
 emptyFormValidation =
@@ -83,7 +91,7 @@ emptyFormValidation =
 
 
 type Msg
-    = GetTime Time.Posix
+    = SetTime Time.Posix
     | UpdateTitle String
     | UpdateDescription String
     | UpdateDate String
@@ -97,75 +105,64 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        GetTime time ->
-            let
-                meeting =
-                    model.newMeeting
+    let
+        session =
+            model.session
 
+        meeting =
+            model.meeting
+
+        formValidation =
+            model.formValidation
+    in
+    case msg of
+        SetTime time ->
+            let
                 newMeeting =
                     { meeting | date = toDate model.session.timeZone time, from = toTime model.session.timeZone time, to = toTime model.session.timeZone time }
             in
-            ( { model | newMeeting = newMeeting, time = time }, Cmd.none )
+            ( { model | meeting = newMeeting, time = time }, Cmd.none )
 
         UpdateTitle value ->
             let
-                meeting =
-                    model.newMeeting
-
                 newMeeting =
                     { meeting | title = value }
             in
-            ( { model | newMeeting = newMeeting }, Cmd.none )
+            ( { model | meeting = newMeeting }, Cmd.none )
 
         UpdateDescription value ->
             let
-                meeting =
-                    model.newMeeting
-
                 newMeeting =
                     { meeting | description = value }
             in
-            ( { model | newMeeting = newMeeting }, Cmd.none )
+            ( { model | meeting = newMeeting }, Cmd.none )
 
         UpdateDate value ->
             let
-                meeting =
-                    model.newMeeting
-
                 newMeeting =
                     { meeting | date = value }
             in
-            ( { model | newMeeting = newMeeting }, Cmd.none )
+            ( { model | meeting = newMeeting }, Cmd.none )
 
         UpdateFrom value ->
             let
-                meeting =
-                    model.newMeeting
-
                 newMeeting =
                     { meeting | from = value }
             in
-            ( { model | newMeeting = newMeeting }, Cmd.none )
+            ( { model | meeting = newMeeting }, Cmd.none )
 
         UpdateTo value ->
             let
-                meeting =
-                    model.newMeeting
-
                 newMeeting =
                     { meeting | to = value }
             in
-            ( { model | newMeeting = newMeeting }, Cmd.none )
+            ( { model | meeting = newMeeting }, Cmd.none )
 
         SearchParticipiant value ->
             ( { model | userSearchText = value }, Cmd.none )
 
         AddParticipiant user ->
             let
-                meeting =
-                    model.newMeeting
-
                 participiants =
                     meeting.participiants ++ [ user ]
 
@@ -175,13 +172,10 @@ update msg model =
                 users =
                     List.filter (\u -> not (u.id == user.id)) model.users
             in
-            ( { model | newMeeting = newMeeting, users = users, userSearchText = "" }, Cmd.none )
+            ( { model | meeting = newMeeting, users = users, userSearchText = "" }, Cmd.none )
 
         RemoveParticipiant user ->
             let
-                meeting =
-                    model.newMeeting
-
                 participiants =
                     List.filter (\u -> not (user.id == u.id)) meeting.participiants
 
@@ -191,102 +185,20 @@ update msg model =
                 users =
                     [ user ] ++ model.users
             in
-            ( { model | newMeeting = newMeeting, users = users, userSearchText = "" }, Cmd.none )
+            ( { model | meeting = newMeeting, users = users, userSearchText = "" }, Cmd.none )
 
         SaveMeeting ->
             let
-                validationResult = validateForm model.newMeeting
+                validationResult =
+                    validateForm model.meeting
             in
-            ( { model | formValidation = validationResult }, Cmd.none)
-
-validateForm : NewMeeting -> FormValidation
-validateForm meeting =
-    let
-        titleResult =
-            case String.isEmpty (String.trim meeting.title) of
+            case valid validationResult of
                 True ->
-                    Invalid "Give me a title"
-            
+                    ( { model | meeting = emptyMeeting, formValidation = emptyFormValidation }, setTime )
+
                 False ->
-                    Valid   
-    in
-    { title = titleResult
-    }
+                    ( { model | formValidation = validationResult }, Cmd.none )
 
-
-
--- VIEW
-
-
-view : Model -> Html Msg
-view model =
-    Html.form []
-        [ fieldset []
-            [ legend []
-                [ text "New Meeting" ]
-            , div []
-                [ label []
-                    [ text "Title:" ]
-                ]
-            , div []
-                [ input [ type_ "text", placeholder "Title", onInput UpdateTitle ]
-                    []
-                ]
-            , div [] 
-                [ validationView model.formValidation.title ]
-            , div []
-                [ label []
-                    [ text "Description:" ]
-                ]
-            , div []
-                [ textarea [ onInput UpdateDescription ]
-                    []
-                ]
-            , div []
-                [ label []
-                    [ text "Time:" ]
-                ]
-            , div []
-                [ input [ type_ "date", onInput UpdateDate, value model.newMeeting.date ]
-                    []
-                , input [ type_ "time", onInput UpdateFrom, value model.newMeeting.from ]
-                    []
-                , input [ type_ "time", onInput UpdateTo, value model.newMeeting.to ]
-                    []
-                ]
-            , div []
-                [ label []
-                    [ text "Participiants:" ]
-                ]
-            , div []
-                (List.map selectedUser model.newMeeting.participiants)
-            , div []
-                [ input [ type_ "text", placeholder "Start typeing", value model.userSearchText, onInput SearchParticipiant ]
-                    []
-                ]
-            , div []
-                [ text "Users:" ]
-            , div []
-                (List.map selectableUser (getMatchedUsers model.userSearchText model.users))
-            , div []
-                [ button [ type_ "button", onClick SaveMeeting ]
-                    [ text "Save" ]
-                ]
-            ]
-        ]
-
-validationView : Validation -> Html Msg
-validationView validation =
-    case validation of
-        NotValidated ->
-            text ""
-    
-        Valid ->
-            text ""
-
-        Invalid reason ->
-            span [] [ text reason ]
-            
 
 toDate : Time.Zone -> Time.Posix -> String
 toDate zone time =
@@ -353,6 +265,115 @@ toMonthNumber month =
 
         Time.Dec ->
             "12"
+
+
+validateForm : Meeting -> FormValidation
+validateForm meeting =
+    let
+        titleResult =
+            case String.isEmpty (String.trim meeting.title) of
+                True ->
+                    Invalid "Give me a title"
+
+                False ->
+                    Valid
+    in
+    { title = titleResult
+    }
+
+
+valid : FormValidation -> Bool
+valid formValidation =
+    List.all (\rule -> rule formValidation)
+        [ \f -> isValidParam f.title ]
+
+
+isValidParam : Validation -> Bool
+isValidParam validation =
+    case validation of
+        Valid ->
+            True
+
+        NotValidated ->
+            False
+
+        Invalid _ ->
+            False
+
+
+
+-- VIEW
+
+
+view : Model -> Html Msg
+view model =
+    Html.form []
+        [ fieldset []
+            [ legend []
+                [ text "New Meeting" ]
+            , div []
+                [ label [ required True ]
+                    [ text "Title:" ]
+                ]
+            , div []
+                [ input [ type_ "text", placeholder "Title", onInput UpdateTitle, value model.meeting.title ]
+                    []
+                ]
+            , div []
+                [ validationView model.formValidation.title ]
+            , div []
+                [ label []
+                    [ text ("Description: (500/" ++ String.fromInt (String.length model.meeting.description) ++ ")") ]
+                ]
+            , div []
+                [ textarea [ onInput UpdateDescription, maxlength 500, value model.meeting.description ]
+                    []
+                ]
+            , div []
+                [ label []
+                    [ text "Time:" ]
+                ]
+            , div []
+                [ input [ type_ "date", onInput UpdateDate, value model.meeting.date ]
+                    []
+                , input [ type_ "time", onInput UpdateFrom, value model.meeting.from ]
+                    []
+                , input [ type_ "time", onInput UpdateTo, value model.meeting.to ]
+                    []
+                ]
+            , div []
+                [ label []
+                    [ text "Participiants:" ]
+                ]
+            , div []
+                (List.map selectedUser model.meeting.participiants)
+            , div []
+                [ input [ type_ "text", placeholder "Start typeing", value model.userSearchText, onInput SearchParticipiant ]
+                    []
+                ]
+            , div []
+                [ text "Users:" ]
+            , div []
+                (List.map selectableUser (getMatchedUsers model.userSearchText model.users))
+            , div []
+                [ button [ type_ "button", onClick SaveMeeting ]
+                    [ text "Save" ]
+                ]
+            ]
+        ]
+
+
+validationView : Validation -> Html Msg
+validationView validation =
+    case validation of
+        NotValidated ->
+            text ""
+
+        Valid ->
+            text ""
+
+        Invalid reason ->
+            span [ class "error" ] [ text reason ]
 
 
 getMatchedUsers : String -> List Users.User -> List Users.User
