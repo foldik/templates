@@ -22,6 +22,7 @@ type alias Model =
     { session : Session.Session
     , time : Time.Posix
     , newMeeting : NewMeeting
+    , formValidation : FormValidation
     , userSearchText : String
     , users : List Users.User
     }
@@ -36,6 +37,15 @@ type alias NewMeeting =
     , participiants : List Users.User
     }
 
+type alias FormValidation =
+    { title : Validation
+    }
+
+type Validation
+    = Valid
+    | Invalid String
+    | NotValidated
+
 
 init : Session.Session -> ( Model, Cmd Msg )
 init session =
@@ -44,6 +54,7 @@ init session =
             { session = session
             , time = Time.millisToPosix 0
             , newMeeting = emptyNewMeeting
+            , formValidation = emptyFormValidation
             , userSearchText = ""
             , users = Users.list
             }
@@ -61,6 +72,11 @@ emptyNewMeeting =
     , participiants = []
     }
 
+emptyFormValidation : FormValidation
+emptyFormValidation =
+    { title = NotValidated
+    }
+
 
 
 -- UPDATE
@@ -76,6 +92,7 @@ type Msg
     | SearchParticipiant String
     | AddParticipiant Users.User
     | RemoveParticipiant Users.User
+    | SaveMeeting
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -176,6 +193,26 @@ update msg model =
             in
             ( { model | newMeeting = newMeeting, users = users, userSearchText = "" }, Cmd.none )
 
+        SaveMeeting ->
+            let
+                validationResult = validateForm model.newMeeting
+            in
+            ( { model | formValidation = validationResult }, Cmd.none)
+
+validateForm : NewMeeting -> FormValidation
+validateForm meeting =
+    let
+        titleResult =
+            case String.isEmpty (String.trim meeting.title) of
+                True ->
+                    Invalid "Give me a title"
+            
+                False ->
+                    Valid   
+    in
+    { title = titleResult
+    }
+
 
 
 -- VIEW
@@ -195,6 +232,8 @@ view model =
                 [ input [ type_ "text", placeholder "Title", onInput UpdateTitle ]
                     []
                 ]
+            , div [] 
+                [ validationView model.formValidation.title ]
             , div []
                 [ label []
                     [ text "Description:" ]
@@ -230,12 +269,24 @@ view model =
             , div []
                 (List.map selectableUser (getMatchedUsers model.userSearchText model.users))
             , div []
-                [ button [ type_ "button" ]
+                [ button [ type_ "button", onClick SaveMeeting ]
                     [ text "Save" ]
                 ]
             ]
         ]
 
+validationView : Validation -> Html Msg
+validationView validation =
+    case validation of
+        NotValidated ->
+            text ""
+    
+        Valid ->
+            text ""
+
+        Invalid reason ->
+            span [] [ text reason ]
+            
 
 toDate : Time.Zone -> Time.Posix -> String
 toDate zone time =
