@@ -87,7 +87,7 @@ update msg model =
                     model.newMeeting
 
                 newMeeting =
-                    { meeting | date = toDate model.session.timeZone time }
+                    { meeting | date = toDate model.session.timeZone time, from = toTime model.session.timeZone time, to = toTime model.session.timeZone time }
             in
             ( { model | newMeeting = newMeeting, time = time }, Cmd.none )
 
@@ -208,11 +208,11 @@ view model =
                     [ text "Time:" ]
                 ]
             , div []
-                [ input [ type_ "date", onInput UpdateDate, value model.newMeeting.date, Html.Attributes.min (toDate model.session.timeZone model.time) ]
+                [ input [ type_ "date", onInput UpdateDate, value model.newMeeting.date ]
                     []
-                , input [ type_ "time", onInput UpdateFrom ]
+                , input [ type_ "time", onInput UpdateFrom, value model.newMeeting.from ]
                     []
-                , input [ type_ "time", onInput UpdateTo ]
+                , input [ type_ "time", onInput UpdateTo, value model.newMeeting.to ]
                     []
                 ]
             , div []
@@ -250,6 +250,18 @@ toDate zone time =
             Time.toDay zone time
     in
     String.fromInt year ++ "-" ++ toMonthNumber month ++ "-" ++ String.fromInt day
+
+
+toTime : Time.Zone -> Time.Posix -> String
+toTime zone time =
+    let
+        hour =
+            Time.toHour zone time
+
+        minute =
+            Time.toMinute zone time
+    in
+    String.fromInt hour ++ ":" ++ String.fromInt minute
 
 
 toMonthNumber : Time.Month -> String
