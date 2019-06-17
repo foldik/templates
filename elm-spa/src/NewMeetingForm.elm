@@ -288,6 +288,7 @@ toMonthNumber month =
         Time.Dec ->
             "12"
 
+
 padLeftTime : String -> String
 padLeftTime value =
     String.padLeft 2 '0' value
