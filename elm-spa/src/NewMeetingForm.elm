@@ -246,7 +246,7 @@ toTime zone time =
         minute =
             Time.toMinute zone time
     in
-    String.fromInt hour ++ ":" ++ String.fromInt minute
+    padLeftTime (String.fromInt hour) ++ ":" ++ padLeftTime (String.fromInt minute)
 
 
 toMonthNumber : Time.Month -> String
@@ -287,6 +287,10 @@ toMonthNumber month =
 
         Time.Dec ->
             "12"
+
+padLeftTime : String -> String
+padLeftTime value =
+    String.padLeft 2 '0' value
 
 
 validateForm : Meeting -> FormValidation
